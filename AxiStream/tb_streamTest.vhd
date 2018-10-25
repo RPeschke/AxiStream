@@ -5,10 +5,10 @@ library ieee;
   use work.UtilityPkg.all;
 
 
-entity hello_world is
+entity tb_streamTest is
 end;
 
-architecture rtl of hello_world is
+architecture rtl of tb_streamTest is
   
   component master is 
   port(
