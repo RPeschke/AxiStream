@@ -100,27 +100,27 @@ package axiStreamHelper is
 
 
 	function axiMasterCLK(signal clk : sl) return boolean;
-   
+
 	function axiSlaveCLK(signal clk : sl) return boolean;
 
 end axiStreamHelper;
 
 package body axiStreamHelper is
 
-function axiMasterCLK(signal clk : sl) return boolean is begin 
+  function axiMasterCLK(signal clk : sl) return boolean is begin 
 
-return rising_edge(clk);
-end axiMasterCLK;
+    return rising_edge(clk);
+  end axiMasterCLK;
 	function axiSlaveCLK(signal clk : sl) return boolean is begin
-	
-	return falling_edge(clk);
+
+    return falling_edge(clk);
 	end axiSlaveCLK;
 
 	function isRxDataReady(RXTX : in AxiSendRecieve) return boolean is begin
-			return RXTX.rx.lastReady = '1';
-	
+    return RXTX.rx.lastReady = '1';
+
 	end isRxDataReady;
-	
+
   function isTXValid(RXTX: in AxiSendRecieve) return boolean is begin
 
     return RXTX.tx.data.DataValid = '1';
@@ -147,7 +147,7 @@ end axiMasterCLK;
 		RXTX.rx.lastReady := RXTX.rx.Ready;
 		RXTX.rx.data  := toMaster.RX_data;
 		RXTX.tx.Ready := toMaster.TX_Ready;
-		
+
     AxiTxIncrementPos(RXTX);
 		AxiReset(RXTX);
 	end procedure AxiMasterPullData;
@@ -157,8 +157,8 @@ end axiMasterCLK;
 		RXTX.rx.lastReady := RXTX.rx.Ready;
 		RXTX.rx.data  := fromMaster.TX_data;
 		RXTX.tx.Ready := fromMaster.RX_Ready;
-		
-		
+
+
     AxiTxIncrementPos(RXTX);
 		AxiReset(RXTX);
 	end procedure AxiSlavePullData;
@@ -274,7 +274,7 @@ end axiMasterCLK;
     if position = RXTX.tx.pos then  
 
       setTXData(RXTX, data);
-      
+
 
     end if;
     RXTX.tx.call_pos := position +1;
@@ -293,18 +293,18 @@ end axiMasterCLK;
   end AxiPushLast;
 
   function tx_currentElement(RXTX : in AxiSendRecieve) return size_t is begin 
-    
+
     return RXTX.tx.pos;
   end tx_currentElement;
 
-  
+
   procedure AxiResetChannel(signal fMaster : out AxiFromMaster_t ;signal  tmaster : out AxiToMaster_t) is begin
-    
+
     fMaster.RX_Ready <= '0';
     fMaster.TX_data.Data <= 0; 
     fMaster.TX_data.DataLast <='0';
     fMaster.TX_data.DataValid <= '0';
-    
+
     tmaster.RX_data.Data <= 0;
     tmaster.RX_data.DataLast <= '0';
     tmaster.RX_data.DataValid <= '0';
