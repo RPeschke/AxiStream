@@ -1,7 +1,7 @@
 library ieee;
   use ieee.std_logic_1164.all;
   use work.axiStreamHelper.all;
-
+  use work.AxiMonoStream.all;
   use work.UtilityPkg.all;
 
 
@@ -14,9 +14,9 @@ architecture rtl of tb_streamTest is
     port(
       clk : in sl;
       -- Outgoing response
-      fromMaster : out  AxiFromMaster_t;
+      fromMaster : out  AxiMonoFromMaster_t;
       -- Incoming data
-      toMaster   : in AxiToMaster_t
+      toMaster   : in AxiMonoToMaster_t
       -- This board ID
     );
   end component;
@@ -24,17 +24,17 @@ architecture rtl of tb_streamTest is
     clk : in sl;
 
     -- Outgoing response
-    toMaster   : out AxiToMaster_t;
+    toMaster   : out AxiMonoToMaster_t;
     -- Incoming data
-    fromMaster : in  AxiFromMaster_t
+    fromMaster : in  AxiMonoFromMaster_t
     -- This board ID
   );
 end component;
 
 
 signal a : sl;
-signal fMaster : AxiFromMaster_t;
-signal tMaster : AxiToMaster_t;
+signal fMaster : AxiMonoFromMaster_t;
+signal tMaster : AxiMonoToMaster_t;
 signal clk : sl;
 constant usrClk_period : time := 10 ns;
 begin

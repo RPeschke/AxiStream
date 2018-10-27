@@ -21,7 +21,8 @@ package axiStreamHelper is
   type AxiStream is record
     data  : AxiData;
     Ready : AxiDataReady_t;
-    lastReady : AxiDataReady_t;
+	 Ready0 : AxiDataReady_t;
+    Ready1 : AxiDataReady_t;
     pos   :  size_t ;
     call_pos :  size_t;
   end record AxiStream;
