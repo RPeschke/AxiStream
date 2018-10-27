@@ -3,6 +3,7 @@ library IEEE;
   use ieee.std_logic_arith.all;
   use ieee.std_logic_unsigned.all;
   use work.UtilityPkg.all;
+
   use work.axiStreamHelper.all;
 
 package AxiMonoStream is
@@ -37,13 +38,13 @@ package AxiMonoStream is
 
 
   --Master Interface 
-  procedure AxiMasterPullData(RXTX : inout AxiMonoSendReceiveMaster; toMaster : in AxiMonoToMaster_t);
-  procedure AxiMasterPushData(RXTX : in AxiMonoSendReceiveMaster; signal fromMaster : out AxiMonoFromMaster_t);
+  procedure AxiMonoMasterPullData(rxtx : inout AxiMonoSendReceiveMaster; signal tMaster : in AxiMonoToMaster_t);
+  procedure AxiMasterPushData(RXTX : inout AxiMonoSendReceiveMaster; signal fromMaster : out AxiMonoFromMaster_t);
   -- end Master Interface  
 
   -- Slave interface
-  procedure AxiSlavePullData(RXTX : inout AxiMonoSendReceiveSlave; fromMaster : in AxiMonoFromMaster_t) ;
-  procedure AxiSlavePushData(RXTX : in AxiMonoSendReceiveSlave; signal toMaster : out AxiMonoToMaster_t) ;
+  procedure AxiMonoSlavePullData(RXTX : inout AxiMonoSendReceiveSlave;signal fromMaster : in AxiMonoFromMaster_t) ;
+  procedure AxiSlavePushData(RXTX : inout AxiMonoSendReceiveSlave; signal toMaster : out AxiMonoToMaster_t) ;
   -- end Slave interface 
 
 
@@ -97,13 +98,12 @@ end AxiMonoStream;
 package body AxiMonoStream is
 
 
-  procedure AxiMasterPullData(RXTX : inout AxiMonoSendReceiveMaster; signal toMaster : in AxiMonoToMaster_t) is begin
-    RXTX.tx.lastReady := RXTX.tx.Ready;
-    RXTX.tx.Ready := toMaster.TX_Ready;
-
-
-    AxiReset(RXTX);
-  end procedure AxiMasterPullData;
+  procedure AxiMonoMasterPullData(rxtx : inout AxiMonoSendReceiveMaster; signal tMaster : in AxiMonoToMaster_t) is begin
+	rxtx.tx.Ready1 := rxtx.tx.Ready0;   
+	rxtx.tx.Ready0 := rxtx.tx.Ready;
+  	rxtx.tx.ready :=tMaster.tx_ready;
+    AxiReset(rxtx);
+  end  AxiMonoMasterPullData;
 
   procedure AxiTxIncrementPos(RXTX: inout AxiMonoSendReceiveMaster) is begin
     if txIsValid(RXTX) and txIsDataReady(RXTX) then 
@@ -125,16 +125,19 @@ package body AxiMonoStream is
   end procedure AxiMasterPushData;
 
 
-  procedure AxiSlavePullData(RXTX : inout AxiMonoSendReceiveSlave; signal fromMaster : in AxiMonoFromMaster_t) is  begin
-    RXTX.RX.lastReady := RXTX.Rx.Ready;
-    RXTX.Rx.data  := fromMaster.TX_data;
+  procedure AxiMonoSlavePullData(RXTX : inout AxiMonoSendReceiveSlave; signal fromMaster : in AxiMonoFromMaster_t) is  begin
+	 RXTX.RX.Ready1 := RXTX.Rx.Ready0;
+    RXTX.RX.Ready0 := RXTX.Rx.Ready;
+    RXTX.Rx.data.Data  := fromMaster.TX_data.Data;
+    RXTX.Rx.data.DataLast  := fromMaster.TX_data.DataLast;
+    RXTX.Rx.data.DataValid := fromMaster.TX_data.DataValid;
     AxiReset(RXTX);
-  end procedure AxiSlavePullData;
+  end procedure AxiMonoSlavePullData;
 
   procedure AxiTxIncrementPos(RXTX: inout AxiMonoSendReceiveSlave) is begin
     if rxIsValidAndReady(RXTX) then 
       RXTX.rx.pos := RXTX.rx.pos + 1;
-      if txIsLast(RXTX) then
+      if rxIsLast(RXTX) then
         RXTX.rx.pos := 0;
       end if;
     end if;
@@ -195,8 +198,12 @@ package body AxiMonoStream is
   end function  txGetData;
 
   function rxIsDataReady(RXTX : in AxiMonoSendReceiveSlave) return boolean is begin
-    return RXTX.rx.lastReady = '1';
+    return RXTX.rx.Ready1 = '1';
   end function rxIsDataReady;
+
+  function rxGetPosition(RXTX: in AxiMonoSendReceiveSlave) return size_t is begin
+    return RXTX.rx.pos;
+  end function rxGetPosition;
 
   function txIsDataReady(RXTX : AxiMonoSendReceiveMaster) return boolean is begin
     return RXTX.tx.Ready = '1';
@@ -215,9 +222,6 @@ package body AxiMonoStream is
   end function rxGetData;
 
 
-  function txGetPosition(RXTX : in AxiMonoSendReceiveMaster) return size_t is begin
-    return RXTX.tx.pos;
-  end function txGetPosition;
 
   function rxIsLast(RXTX : AxiMonoSendReceiveSlave) return boolean is begin
     return RXTX.rx.Data.DataLast = '1';
@@ -228,7 +232,7 @@ package body AxiMonoStream is
   end function rxIsValid;
 
   function rxIsValidAndReady(RXTX : AxiMonoSendReceiveSlave) return boolean is begin
-    return rxIsValid(RXTX) and RXTX.rx.lastReady = '1';  
+    return rxIsValid(RXTX) and RXTX.rx.Ready1 = '1';  
 
   end function rxIsValidAndReady;
 
@@ -239,7 +243,7 @@ package body AxiMonoStream is
 
   procedure rxPullData(RXTX: inout AxiMonoSendReceiveSlave; data :out data_t; position :in size_t) is begin
     if rxIsPosition(RXTX, position) then 
-      data := RXTX.rx.data;
+      data := RXTX.rx.data.Data;
     end if; 
     RXTX.rx.call_pos := RXTX.rx.call_pos + 1;
   end procedure rxPullData;
@@ -264,7 +268,7 @@ package body AxiMonoStream is
 
   procedure AxiResetChannel(signal fMaster : out AxiMonoFromMaster_t ;signal  tmaster : out AxiMonoToMaster_t) is begin
 
-    
+
     fMaster.TX_data.Data <= 0; 
     fMaster.TX_data.DataLast <='0';
     fMaster.TX_data.DataValid <= '0';
