@@ -1,17 +1,21 @@
 library ieee;
   use ieee.std_logic_1164.all;
   use work.axiStreamHelper.all;
+
+  use work.AxiMonoStream.all;
+
   use work.UtilityPkg.all;
   use STD.textio.all;
+
 entity master is 
   port(
 
     clk : in sl;
 
     -- Outgoing response
-    fromMaster : out  AxiFromMaster_t;
+    fromMaster : out  AxiMonoFromMaster_t;
     -- Incoming data
-    toMaster   : in AxiToMaster_t
+    toMaster   : in AxiMonoToMaster_t
     -- This board ID
   );
 end master;
@@ -28,28 +32,33 @@ architecture rtl of master is
 
 begin
   seq : process(clk) is
-    variable RXTX : AxiSendRecieve;
+    variable RXTX : AxiMonoSendReceiveMaster ;
     variable state : integer := 0;
 
   begin
-    if (axiMasterCLK(clk)) then
+    if (rising_edge(clk)) then
       state := state +1;
       if state < 2 then 
         RXTX.tx.pos := 0;
+		  --RXTX.tx.ready :='0';
       end if;
-      AxiMasterPullData(RXTX, toMaster);
+      AxiMonoMasterPullData(RXTX, toMaster);
 
-      report integer'image(tx_currentElement(RXTX));
-      AxiPushData(RXTX, 1);
-      AxiPushData(RXTX, 2);
-      AxiPushData(RXTX, 3);          
-      AxiPushData(RXTX, 4);      
-      AxiPushData(RXTX, 5);      		
-      AxiPushData(RXTX, 6);      
-      AxiPushLast(RXTX);
+		--RXTX.tx.ready :=toMaster.tx_ready;
+      report integer'image(txGetPosition(RXTX));
+		if txIsDataReady(RXTX) then 
+      txPushData(RXTX, 1);
+      txPushData(RXTX, 2);
+      txPushData(RXTX, 3);          
+      txPushData(RXTX, 4);      
+      txPushData(RXTX, 5);      		
+      txPushData(RXTX, 6);      
+      txPushLast(RXTX);
+		end if;
 
 
       AxiMasterPushData(RXTX, fromMaster);
+		
       --writeline (output, RXTX.tx.data.data);
       --writeline (output, string'("ASDAD"));
       report "jgjh";
