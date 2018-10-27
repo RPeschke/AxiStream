@@ -1,6 +1,7 @@
 library ieee;
   use ieee.std_logic_1164.all;
   use work.axiStreamHelper.all;
+  use work.AxiMonoStream.all;
   use work.UtilityPkg.all;
 
   use std.textio.all;
@@ -9,9 +10,9 @@ entity slave is
     clk : in sl;
 
     -- Outgoing response
-    toMaster   : out AxiToMaster_t;
+    toMaster   : out AxiMonoToMaster_t;
     -- Incoming data
-    fromMaster : in  AxiFromMaster_t
+    fromMaster : in  AxiMonoFromMaster_t
     -- This board ID
   );
 end slave;
@@ -27,7 +28,7 @@ architecture rtl of slave is
 begin
 
   seq : process(clk) is
-    variable RXTX : AxiSendRecieve;
+    variable RXTX : AxiMonoSendReceiveSlave;
     variable state : integer := 0;
     variable data: data_t;
     variable counter : integer := 0 ;
@@ -37,7 +38,7 @@ begin
   begin
 
 
-    if (axiMasterCLK(clk)) then
+    if (rising_edge(clk)) then
       if counter_full = 0 then 
         file_open(statwr, fptr, C_FILE_NAME_WR, write_mode);
       end  if;
@@ -45,15 +46,15 @@ begin
       counter_full := counter_full +1;
 
       counter := counter +1;
-      AxiSlavePullData(RXTX, fromMaster);
-      data := rxData(RXTX);
-      if rxValid(RXTX) and counter > 3 then 
-        rxDataReady(RXTX);
+      AxiMonoSlavePullData(RXTX, fromMaster);
+      data := rxGetData(RXTX);
+      if  counter > 3 then 
+        rxSetDataReady(RXTX);
         if counter >4 then 
           counter :=0;
         end if;
       end if;
-      if counter_full < endSim and isRxDataReady(RXTX) then 
+      if counter_full < endSim and rxIsValidAndReady(RXTX) then 
         --		      hwrite(file_line, data, left, 5);
 				write(file_line, data, right, 2);
         --				write(file_line, data, left, 5);
