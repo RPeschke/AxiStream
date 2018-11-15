@@ -40,28 +40,24 @@ begin
       state := state +1;
       if state < 2 then 
         RXTX.tx.pos := 0;
-		  --RXTX.tx.ready :='0';
+
       end if;
       AxiMonoMasterPullData(RXTX, toMaster);
 
-		--RXTX.tx.ready :=toMaster.tx_ready;
-      report integer'image(txGetPosition(RXTX));
-		if txIsDataReady(RXTX) then 
-      txPushData(RXTX, 1);
-      txPushData(RXTX, 2);
-      txPushData(RXTX, 3);          
-      txPushData(RXTX, 4);      
-      txPushData(RXTX, 5);      		
-      txPushData(RXTX, 6);      
-      txPushLast(RXTX);
-		end if;
+      if txIsDataReady(RXTX) then 
+        txPushData(RXTX, 1,0);
+        txPushData(RXTX, 2,1);
+        txPushData(RXTX, 3,2);          
+        txPushData(RXTX, 4);      
+        txPushData(RXTX, 5);      		
+        txPushData(RXTX, 6);      
+        txPushLast(RXTX);
+      end if;
 
 
       AxiMasterPushData(RXTX, fromMaster);
-		
-      --writeline (output, RXTX.tx.data.data);
-      --writeline (output, string'("ASDAD"));
-      report "jgjh";
+
+
     end if;
   end process seq;
 

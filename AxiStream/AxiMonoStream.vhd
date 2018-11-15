@@ -118,9 +118,9 @@ package body AxiMonoStream is
 
 
   procedure  AxiMasterPushData(RXTX : inout AxiMonoSendReceiveMaster; signal fromMaster : out AxiMonoFromMaster_t) is begin
-    fromMaster.TX_data.Data  <= RXTX.tx.data.Data;
-    fromMaster.TX_data.DataLast <= RXTX.tx.data.DataLast;
-    fromMaster.TX_data.DataValid <= RXTX.tx.data.DataValid;
+    fromMaster.TX_data.Data  <= RXTX.tx.data.Data after 1 ns;
+    fromMaster.TX_data.DataLast <= RXTX.tx.data.DataLast after 1 ns;
+    fromMaster.TX_data.DataValid <= RXTX.tx.data.DataValid after 1 ns;
     AxiTxIncrementPos(RXTX);
   end procedure AxiMasterPushData;
 
@@ -148,7 +148,7 @@ package body AxiMonoStream is
 
   procedure AxiSlavePushData(RXTX : inout AxiMonoSendReceiveSlave ; signal toMaster : out AxiMonoToMaster_t) is
   begin
-    toMaster.TX_Ready <= RXTX.rx.Ready;
+    toMaster.TX_Ready <= RXTX.rx.Ready after 1 ns;
     AxiTxIncrementPos(RXTX);
   end procedure AxiSlavePushData;
 

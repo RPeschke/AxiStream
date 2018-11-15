@@ -148,18 +148,18 @@ package body AxiBiStream is
 
   procedure  AxiMasterPushData(RXTX : in AxiSendRecieve; signal fromMaster : out AxiFromMaster_t) is
   begin
-    fromMaster.TX_data.Data  <= RXTX.tx.data.Data;
-    fromMaster.TX_data.DataLast <= RXTX.tx.data.DataLast;
-    fromMaster.TX_data.DataValid <= RXTX.tx.data.DataValid;
-    fromMaster.RX_Ready <= RXTX.rx.Ready;
+    fromMaster.TX_data.Data  <= RXTX.tx.data.Data after 10 ns;
+    fromMaster.TX_data.DataLast <= RXTX.tx.data.DataLast after 10 ns;;
+    fromMaster.TX_data.DataValid <= RXTX.tx.data.DataValid after 10 ns;;
+    fromMaster.RX_Ready <= RXTX.rx.Ready after 10 ns;
   end procedure AxiMasterPushData;
 
   procedure AxiSlavePushData(RXTX : in AxiSendRecieve ; signal toMaster : out AxiToMaster_t) is
   begin
-    toMaster.RX_data.Data  <= RXTX.tx.data.Data;
-    toMaster.RX_data.DataLast <= RXTX.tx.data.DataLast;
-    toMaster.RX_data.DataValid <= RXTX.tx.data.DataValid;
-    toMaster.TX_Ready <= RXTX.rx.Ready;
+    toMaster.RX_data.Data  <= RXTX.tx.data.Data after 10 ns;
+    toMaster.RX_data.DataLast <= RXTX.tx.data.DataLast after 10 ns;
+    toMaster.RX_data.DataValid <= RXTX.tx.data.DataValid after 10 ns;
+    toMaster.TX_Ready <= RXTX.rx.Ready after 10 ns;
   end procedure AxiSlavePushData;
 
   procedure AxiFromMaster2TX(

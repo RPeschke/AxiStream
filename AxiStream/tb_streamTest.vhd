@@ -20,6 +20,17 @@ architecture rtl of tb_streamTest is
       -- This board ID
     );
   end component;
+  component Master_textio is 
+  generic (FileName : string := "read_file_ex.txt");
+    port(
+      clk : in sl;
+      -- Outgoing response
+      fromMaster : out  AxiMonoFromMaster_t;
+      -- Incoming data
+      toMaster   : in AxiMonoToMaster_t
+      -- This board ID
+    );
+  end component;
   component slave is port(
     clk : in sl;
 
@@ -41,7 +52,7 @@ begin
 
 
   s : slave port map (clk => clk,toMaster => tMaster, fromMaster => fMaster);  
-  m : master port map (clk => clk , fromMaster=> fMaster ,  toMaster  => tMaster);
+  m : Master_textio generic map (FileName => "read_file_ex.txt") port map (clk => clk , fromMaster=> fMaster ,  toMaster  => tMaster);
 
 
   usrClk_process :process
@@ -52,27 +63,5 @@ begin
     wait for usrClk_period/2;
   end process;
 
-  stimulus : process
 
-
-  begin
-
-    --AxiResetChannel(fMaster,tMaster);
-
-    --    tMaster.TX_Ready <= '1';
-
-    a <= '1';
-
-    wait for 10 ns;
-
-    a <= '0';
-    wait for 10 ns;
-    a <= '1';
-    wait for 10 ns;  
-
-    assert false
-      report "Hello World"
-      severity note;
-    wait;
-  end process stimulus;
 end rtl;

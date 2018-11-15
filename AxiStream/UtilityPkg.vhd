@@ -25,7 +25,8 @@ package UtilityPkg is
    type Word13Array is array (natural range <>) of slv(12 downto 0);
    type Word16Array is array (natural range <>) of slv(15 downto 0);
    type Word32Array is array (natural range <>) of slv(31 downto 0);
-
+	
+	type t_integer_array       is array(integer range <> )  of integer;
    -----------------------
    -- Function prototypes
    -----------------------

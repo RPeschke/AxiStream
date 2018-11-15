@@ -56,7 +56,7 @@ begin
       end if;
       if counter_full < endSim and rxIsValidAndReady(RXTX) then 
         --		      hwrite(file_line, data, left, 5);
-				write(file_line, data, right, 2);
+        write(file_line, data, right, 2);
         --				write(file_line, data, left, 5);
         writeline(fptr, file_line);
       end  if;
