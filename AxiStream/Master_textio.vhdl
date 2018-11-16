@@ -20,8 +20,9 @@ generic (FileName : string := "read_file_ex.txt");
     -- Incoming data
     toMaster   : in AxiMonoToMaster_t
    
-  );
+  ); 
 end Master_textio;
+
 
 architecture Behavioral of Master_textio is
 type t_integer_array       is array(integer range <> )  of integer;
