@@ -31,14 +31,11 @@ begin
     file input_buf : text;  -- text is keyword
 
     variable csv : csv_file;
-    variable state : integer := 0;
+
   begin
     if rising_edge(clk) then 
-      if state = 0 then
-        csv_reset(csv);
-        state :=  1;
-      end if;
-
+    
+      
       if not csv_isOpen(csv) then
         csv_openFile(csv,input_buf, FileName, HeaderLines, NUM_COL);
       end if;
