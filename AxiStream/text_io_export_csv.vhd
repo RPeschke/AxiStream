@@ -3,7 +3,7 @@ library IEEE;
   use work.UtilityPkg.all;
   use STD.textio.all;
 
-package test_io_export_csv is
+package text_io_export_csv is
 
   constant NUM_COL : integer := 30;
   constant Integer_width : integer := 5;
@@ -23,9 +23,9 @@ package test_io_export_csv is
   procedure csv_set(csv : inout csv_exp_file ; index : in integer ; data :in integer);
   procedure csv_write(csv : inout csv_exp_file; file F: Text);
   function csv_isOpen(csv : csv_exp_file) return boolean;
-end test_io_export_csv;
+end text_io_export_csv;
 
-package body test_io_export_csv is
+package body text_io_export_csv is
   procedure csv_openFile(variable csv : inout csv_exp_file ; file F: Text; FileName :  string; Header : string; NumOfcolumns : integer := NUM_COL) is begin
     --      csv_reset(csv);
     csv.columns := NumOfcolumns;
@@ -50,7 +50,7 @@ package body test_io_export_csv is
 
   function csv_isOpen(csv : csv_exp_file) return boolean is begin
     return csv.IsOpen = '1';
-  end csv_isOpen;
+  end;
 
   procedure csv_set(csv : inout csv_exp_file ; index : in integer ; data :in integer) is begin
     csv.data_vecotor_buffer(index) := data;
@@ -63,4 +63,4 @@ package body test_io_export_csv is
     writeline(F, csv.lineBuffer);
   end csv_write;
 
-end test_io_export_csv;
+end text_io_export_csv;
