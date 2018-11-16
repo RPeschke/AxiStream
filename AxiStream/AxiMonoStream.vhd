@@ -102,6 +102,7 @@ package body AxiMonoStream is
 	rxtx.tx.Ready1 := rxtx.tx.Ready0;   
 	rxtx.tx.Ready0 := rxtx.tx.Ready;
   	rxtx.tx.ready :=tMaster.tx_ready;
+	rxtx.tx.data.Data := 0;
     AxiReset(rxtx);
   end  AxiMonoMasterPullData;
 
