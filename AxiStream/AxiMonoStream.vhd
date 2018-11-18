@@ -99,10 +99,10 @@ package body AxiMonoStream is
 
 
   procedure AxiMonoMasterPullData(rxtx : inout AxiMonoSendReceiveMaster; signal tMaster : in AxiMonoToMaster_t) is begin
-	rxtx.tx.Ready1 := rxtx.tx.Ready0;   
-	rxtx.tx.Ready0 := rxtx.tx.Ready;
+    rxtx.tx.Ready1 := rxtx.tx.Ready0;   
+    rxtx.tx.Ready0 := rxtx.tx.Ready;
   	rxtx.tx.ready :=tMaster.tx_ready;
-	rxtx.tx.data.Data := 0;
+    rxtx.tx.data.Data := 0;
     AxiReset(rxtx);
   end  AxiMonoMasterPullData;
 
@@ -127,7 +127,7 @@ package body AxiMonoStream is
 
 
   procedure AxiMonoSlavePullData(RXTX : inout AxiMonoSendReceiveSlave; signal fromMaster : in AxiMonoFromMaster_t) is  begin
-	 RXTX.RX.Ready1 := RXTX.Rx.Ready0;
+    RXTX.RX.Ready1 := RXTX.Rx.Ready0;
     RXTX.RX.Ready0 := RXTX.Rx.Ready;
     RXTX.Rx.data.Data  := fromMaster.TX_data.Data;
     RXTX.Rx.data.DataLast  := fromMaster.TX_data.DataLast;
