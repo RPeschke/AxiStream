@@ -14,8 +14,7 @@ entity csv_write_file is
   generic (
     FileName : string := "read_file_ex.txt";
     NUM_COL : integer := 3;
-    HeaderLines :string := "x y z"
-
+    HeaderLines :string := "x; y; z"
   );
   port(
     clk : in sl;

@@ -13,8 +13,8 @@ entity csv_read_file is
   generic (
     FileName : string := "read_file_ex.txt";
     NUM_COL : integer := 3;
-    HeaderLines :integer :=1
-
+    HeaderLines :integer :=1;
+    Delay : time := 2 ns 
   );
   port(
     clk : in sl;
@@ -47,9 +47,9 @@ begin
       end if;
 
       for i in 0 to NUM_COL loop
-        Rows(i) <= csv_get(csv, i);
+        Rows(i) <= csv_get(csv, i) after Delay ;
       end loop;
-      Index <= csv_getIndex(csv);
+      Index <= csv_getIndex(csv) after Delay ;
     end if;
   end process seq;
 end Behavioral;

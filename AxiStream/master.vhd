@@ -9,19 +9,18 @@ library ieee;
 
 entity master is 
   port(
-
     clk : in sl;
-
     -- Outgoing response
     fromMaster : out  AxiMonoFromMaster_t;
     -- Incoming data
     toMaster   : in AxiMonoToMaster_t
-    -- This board ID
   );
 end master;
 
 architecture rtl of master is 
-
+  
+  
+  
   constant WORD_HEADER_C  : data_t := 0;  
   constant WORD_COMMAND_C : data_t := 1;
   constant WORD_PING_C    : data_t := 2;
@@ -35,6 +34,7 @@ begin
     variable RXTX : AxiMonoSendReceiveMaster ;
     variable state : integer := 0;
 
+    
   begin
     if (rising_edge(clk)) then
       state := state +1;

@@ -30,7 +30,8 @@ package body text_io_export_csv is
     --      csv_reset(csv);
     csv.columns := NumOfcolumns;
     file_open(F, FileName,  write_mode); 
-    --    writeline(F, Header);
+    WRITE(csv.lineBuffer,Header,right, Integer_width);
+    writeline(F, csv.lineBuffer);
     csv.IsOpen := '1';
 
   end csv_openFile;
@@ -58,6 +59,9 @@ package body text_io_export_csv is
   end csv_set;
   procedure csv_write(csv : inout csv_exp_file ; file F: Text) is begin
     for i in 0 to csv.columns loop
+      if i > 0 then 
+        write(csv.lineBuffer,  "; " , right, 2);        
+      end if;
       write(csv.lineBuffer,  csv.data_vecotor_buffer(i) , right, Integer_width);
     end loop;
     writeline(F, csv.lineBuffer);
