@@ -20,7 +20,7 @@ $r = "library IEEE;
   $(v_packet -name $packetName -entries (
 
         (v_subtype -name  $dataTypeName -type $DataType),
-        (v_procedure -name reset -argumentList "data : inout $($dataTypeName)" -body "data := $dataZero;"),
+        (v_procedure -name AxiStreamReset -argumentList "data : inout $($dataTypeName)" -body "data := $dataZero;"),
 
 
         (v_record -name "$axiName" -entries (
@@ -49,7 +49,7 @@ $r = "library IEEE;
             this.tx.Ready1 := this.tx.Ready0;   
             this.tx.Ready0 := this.tx.Ready;
   	        this.tx.ready :=tMaster.tx_ready;
-            reset(this.tx.Data);
+            AxiStreamReset(this.tx.Data);
             AxiReset(this);
          "),
           (v_procedure -name AxiTxIncrementPos -body "

@@ -20,6 +20,9 @@ package UtilityPkg is
    subtype slv is std_logic_vector;
    subtype size_t is integer ;
    constant size_t_null : size_t := 0;
+   
+   subtype  integerM is integer;
+   subtype  integerS is integer;
    -- Useful array types
    type Word8Array  is array (natural range <>) of slv( 7 downto 0);
    type Word9Array  is array (natural range <>) of slv( 8 downto 0);

@@ -9,10 +9,9 @@ library IEEE;
   package axiIntbi_p is
 subtype  integerM_data_t is integerM;
 constant integerM_data_t_null : integerM := 0; 
-procedure reset(data : inout integerM_data_t);
+procedure resetData(data : inout integerM_data_t);
 subtype  IntegerS_data_t is IntegerS;
 constant IntegerS_data_t_null : IntegerS := 0; 
-procedure reset(data : inout IntegerS_data_t);
 
 type AxiToMaster_axiIntBi is record 
 TX_Ready : AxiDataReady_t; 
@@ -64,7 +63,7 @@ position => size_t_null);
  procedure IncrementPosSender(this : inout axiIntBi_fromMaster);
  procedure ResetReceiver(this : inout axiIntBi_fromMaster);
  procedure pullReceiver(this : inout axiIntBi_fromMaster; RX_Data : in integerM_data_t; DataLast : in sl; DataValid : in sl);
- procedure pushReceiver(this : inout axiIntBi_fromMaster; RX_Ready : out AxiDataReady_t);
+ procedure pushReceiver(this : inout axiIntBi_fromMaster; signal RX_Ready : out AxiDataReady_t);
  procedure IncrementPosReceiver(this : inout axiIntBi_fromMaster);
  function  IsReady(this : in axiIntBi_fromMaster) return boolean;
  function  wasReady(this : in axiIntBi_fromMaster) return boolean;
@@ -102,7 +101,7 @@ position => size_t_null);
  procedure IncrementPosSender(this : inout axiIntBi_ToMaster);
  procedure ResetReceiver(this : inout axiIntBi_ToMaster);
  procedure pullReceiver(this : inout axiIntBi_ToMaster; RX_Data : in IntegerS_data_t; DataLast : in sl; DataValid : in sl);
- procedure pushReceiver(this : inout axiIntBi_ToMaster; RX_Ready : out AxiDataReady_t);
+ procedure pushReceiver(this : inout axiIntBi_ToMaster; signal RX_Ready : out AxiDataReady_t);
  procedure IncrementPosReceiver(this : inout axiIntBi_ToMaster);
  function  IsReady(this : in axiIntBi_ToMaster) return boolean;
  function  wasReady(this : in axiIntBi_ToMaster) return boolean;
@@ -134,9 +133,11 @@ rx => axiIntBi_ToMaster_null);
  function  txIsLast(this : in AxiRXTXMaster_axiIntBi) return boolean;
  function  txIsValid(this : in AxiRXTXMaster_axiIntBi) return boolean;
  function  txGetData(this : in AxiRXTXMaster_axiIntBi) return integerM_data_t;
+ function  txGetPos(this : in AxiRXTXMaster_axiIntBi) return size_t;
  function  rxIsValidAndReady(this : in AxiRXTXMaster_axiIntBi) return boolean;
  function  rxGetData(this : in AxiRXTXMaster_axiIntBi) return IntegerS_data_t;
  procedure rxSetReady(this : inout AxiRXTXMaster_axiIntBi);
+ function  rxGetPos(this : in AxiRXTXMaster_axiIntBi) return size_t;
  -- End Pseudo class AxiRXTXMaster_axiIntBi
 
 
@@ -144,46 +145,43 @@ rx => axiIntBi_ToMaster_null);
 -- Starting Pseudo class AxiRXTXSlave_axiIntBi
  
 type AxiRXTXSlave_axiIntBi is record 
-RX : axiIntBi; 
+tx : axiIntBi_ToMaster; 
+rx : axiIntBi_fromMaster; 
 
 end record AxiRXTXSlave_axiIntBi; 
 
-constant  AxiRXTXSlave_axiIntBi_null: AxiRXTXSlave_axiIntBi := (RX => axiIntBi_null);
+constant  AxiRXTXSlave_axiIntBi_null: AxiRXTXSlave_axiIntBi := (tx => axiIntBi_ToMaster_null,
+rx => axiIntBi_fromMaster_null);
 
- procedure AxiPullData(this : inout AxiRXTXSlave_axiIntBi; signal fromMaster : in AxiFromMaster_axiIntBi);
- procedure AxiTxIncrementPos(this : inout AxiRXTXSlave_axiIntBi);
+ procedure AxiPullData(this : inout AxiRXTXSlave_axiIntBi; signal fMaster : in AxiFromMaster_axiIntBi);
  procedure AxiPushData(this : inout AxiRXTXSlave_axiIntBi; signal toMaster : out AxiToMaster_axiIntBi);
- function  rxIsDataReady(this : in AxiRXTXSlave_axiIntBi) return boolean;
- function  rxGetPosition(this : in AxiRXTXSlave_axiIntBi) return size_t;
- procedure rxSetDataReady(this : inout AxiRXTXSlave_axiIntBi);
- function  rxGetData(this : in AxiRXTXSlave_axiIntBi) return size_t;
- function  rxIsLast(this : in AxiRXTXSlave_axiIntBi) return boolean;
- function  rxIsValid(this : in AxiRXTXSlave_axiIntBi) return boolean;
+ function  txIsReady(this : in AxiRXTXSlave_axiIntBi) return boolean;
+ procedure txSetData(this : inout AxiRXTXSlave_axiIntBi; data : in IntegerS_data_t);
+ procedure txSetLast(this : inout AxiRXTXSlave_axiIntBi);
+ function  txIsLast(this : in AxiRXTXSlave_axiIntBi) return boolean;
+ function  txIsValid(this : in AxiRXTXSlave_axiIntBi) return boolean;
+ function  txGetData(this : in AxiRXTXSlave_axiIntBi) return IntegerS_data_t;
+ function  txGetPos(this : in AxiRXTXSlave_axiIntBi) return size_t;
  function  rxIsValidAndReady(this : in AxiRXTXSlave_axiIntBi) return boolean;
- function  rxIsPosition(this : in AxiRXTXSlave_axiIntBi; position :size_t) return boolean;
- procedure rxPullData(this : inout AxiRXTXSlave_axiIntBi; data :out ; position :in size_t);
- procedure rxPullData(this : inout AxiRXTXSlave_axiIntBi; data :out );
- procedure AxiReset(this : inout AxiRXTXSlave_axiIntBi);
+ function  rxGetData(this : in AxiRXTXSlave_axiIntBi) return integerM_data_t;
+ procedure rxSetReady(this : inout AxiRXTXSlave_axiIntBi);
+ function  rxGetPos(this : in AxiRXTXSlave_axiIntBi) return size_t;
  -- End Pseudo class AxiRXTXSlave_axiIntBi
 
 end axiIntbi_p;
 
 
 package body axiIntbi_p is
-procedure reset(data : inout integerM_data_t) is begin 
+procedure resetData(data : inout integerM_data_t) is begin 
 data := 0; 
-end procedure reset; 
-
-procedure reset(data : inout IntegerS_data_t) is begin 
-data := 0; 
-end procedure reset; 
+end procedure resetData; 
 
 
 
 -- Starting Pseudo class axiIntBi_fromMaster
   procedure resetSender(this : inout axiIntBi_fromMaster) is begin 
 
-            reset(this.Data);
+            resetData(this.Data);
             this.ctrl.DataLast  := '0';
             this.ctrl.DataValid := '0';
           
@@ -221,7 +219,7 @@ end procedure IncrementPosSender;
  procedure ResetReceiver(this : inout axiIntBi_fromMaster) is begin 
 
             this.Ready    := '0';
-            this.call_pos := 0;
+            
            
 end procedure ResetReceiver; 
 
@@ -237,16 +235,16 @@ end procedure ResetReceiver;
            
 end procedure pullReceiver; 
 
- procedure pushReceiver(this : inout axiIntBi_fromMaster; RX_Ready : out AxiDataReady_t) is begin 
+ procedure pushReceiver(this : inout axiIntBi_fromMaster; signal RX_Ready : out AxiDataReady_t) is begin 
 
-            fromMaster.RX_Ready <= this.Ready after 1 ns;
-            AxiRxIncrementPos(this);
+            RX_Ready <= this.Ready after 1 ns;
+            IncrementPosReceiver(this);
            
 end procedure pushReceiver; 
 
  procedure IncrementPosReceiver(this : inout axiIntBi_fromMaster) is begin 
 
-             if rxIsValidAndReady(this) then 
+             if IsValid(this) and  wasReady(this) then 
                 this.position := this.position + 1;
                 if isLast(this) then
                     this.position := 0;
@@ -293,7 +291,7 @@ end procedure SetValid;
             if not IsValid(this) then 
                 report "Error data not set";
             end if;
-            this.tx.ctrl.DataLast := last;
+            this.ctrl.DataLast := last;
           
 end procedure SetLast; 
 
@@ -305,7 +303,7 @@ end procedure SetLast;
             if IsValid(this) then 
                 report "Error data already set";
             end if;
-            this.tx.Data := data;
+            this.Data := data;
             SetValid(this);
           
 end procedure SetData; 
@@ -317,7 +315,7 @@ end procedure SetData;
 -- Starting Pseudo class axiIntBi_ToMaster
   procedure resetSender(this : inout axiIntBi_ToMaster) is begin 
 
-            reset(this.Data);
+            resetData(this.Data);
             this.ctrl.DataLast  := '0';
             this.ctrl.DataValid := '0';
           
@@ -355,7 +353,7 @@ end procedure IncrementPosSender;
  procedure ResetReceiver(this : inout axiIntBi_ToMaster) is begin 
 
             this.Ready    := '0';
-            this.call_pos := 0;
+            
            
 end procedure ResetReceiver; 
 
@@ -371,16 +369,16 @@ end procedure ResetReceiver;
            
 end procedure pullReceiver; 
 
- procedure pushReceiver(this : inout axiIntBi_ToMaster; RX_Ready : out AxiDataReady_t) is begin 
+ procedure pushReceiver(this : inout axiIntBi_ToMaster; signal RX_Ready : out AxiDataReady_t) is begin 
 
-            fromMaster.RX_Ready <= this.Ready after 1 ns;
-            AxiRxIncrementPos(this);
+            RX_Ready <= this.Ready after 1 ns;
+            IncrementPosReceiver(this);
            
 end procedure pushReceiver; 
 
  procedure IncrementPosReceiver(this : inout axiIntBi_ToMaster) is begin 
 
-             if rxIsValidAndReady(this) then 
+             if IsValid(this) and  wasReady(this) then 
                 this.position := this.position + 1;
                 if isLast(this) then
                     this.position := 0;
@@ -427,7 +425,7 @@ end procedure SetValid;
             if not IsValid(this) then 
                 report "Error data not set";
             end if;
-            this.tx.ctrl.DataLast := last;
+            this.ctrl.DataLast := last;
           
 end procedure SetLast; 
 
@@ -439,7 +437,7 @@ end procedure SetLast;
             if IsValid(this) then 
                 report "Error data already set";
             end if;
-            this.tx.Data := data;
+            this.Data := data;
             SetValid(this);
           
 end procedure SetData; 
@@ -500,6 +498,12 @@ end function txIsValid;
           
 end function txGetData; 
 
+ function  txGetPos(this : in AxiRXTXMaster_axiIntBi) return size_t is begin 
+
+            return this.tx.position;
+          
+end function txGetPos; 
+
  function  rxIsValidAndReady(this : in AxiRXTXMaster_axiIntBi) return boolean is begin 
 
             return IsValid(this.rx) and wasReady(this.rx);  
@@ -521,109 +525,100 @@ end function rxGetData;
           
 end procedure rxSetReady; 
 
+ function  rxGetPos(this : in AxiRXTXMaster_axiIntBi) return size_t is begin 
+
+            return this.rx.position;
+          
+end function rxGetPos; 
+
  -- End Pseudo class AxiRXTXMaster_axiIntBi
 
 
 
 -- Starting Pseudo class AxiRXTXSlave_axiIntBi
-  procedure AxiPullData(this : inout AxiRXTXSlave_axiIntBi; signal fromMaster : in AxiFromMaster_axiIntBi) is begin 
+  procedure AxiPullData(this : inout AxiRXTXSlave_axiIntBi; signal fMaster : in AxiFromMaster_axiIntBi) is begin 
 
-            this.RX.Ready1 := this.Rx.Ready0;
-            this.RX.Ready0 := this.Rx.Ready;
-            this.Rx.Data  := fromMaster.TX_Data;
-            this.Rx.ctrl.DataLast  := fromMaster.TX_ctrl.DataLast;
-            this.Rx.ctrl.DataValid := fromMaster.TX_ctrl.DataValid;
-            AxiReset(this);
-         
+            pullSender(this.tx, fMaster.RX_Ready);
+            pullReceiver(this.rx, fMaster.TX_Data ,fMaster.TX_ctrl.DataLast,  fMaster.TX_ctrl.DataValid);
+
+           
 end procedure AxiPullData; 
-
- procedure AxiTxIncrementPos(this : inout AxiRXTXSlave_axiIntBi) is begin 
-
-             if rxIsValidAndReady(this) then 
-                this.rx.position := this.rx.position + 1;
-                if rxIsLast(this) then
-                    this.rx.position := 0;
-                end if;
-             end if;
-         
-end procedure AxiTxIncrementPos; 
 
  procedure AxiPushData(this : inout AxiRXTXSlave_axiIntBi; signal toMaster : out AxiToMaster_axiIntBi) is begin 
 
-            toMaster.TX_Ready <= this.rx.Ready after 1 ns;
-            AxiTxIncrementPos(this);
-          
+            pushSender(this.tx, toMaster.RX_Data ,toMaster.RX_ctrl.DataLast,toMaster.RX_ctrl.DataValid );
+            pushReceiver(this.rx, toMaster.TX_Ready);
+           
 end procedure AxiPushData; 
 
- function  rxIsDataReady(this : in AxiRXTXSlave_axiIntBi) return boolean is begin 
+ function  txIsReady(this : in AxiRXTXSlave_axiIntBi) return boolean is begin 
 
-            return this.rx.Ready1 = '1';
+             return IsReady(this.tx);
           
-end function rxIsDataReady; 
+end function txIsReady; 
 
- function  rxGetPosition(this : in AxiRXTXSlave_axiIntBi) return size_t is begin 
+ procedure txSetData(this : inout AxiRXTXSlave_axiIntBi; data : in IntegerS_data_t) is begin 
 
-            return this.rx.position;
+            SetData(this.tx, data);
           
-end function rxGetPosition; 
+end procedure txSetData; 
 
- procedure rxSetDataReady(this : inout AxiRXTXSlave_axiIntBi) is begin 
+ procedure txSetLast(this : inout AxiRXTXSlave_axiIntBi) is begin 
 
-            this.rx.Ready := '1';
+            SetLast(this.tx);
           
-end procedure rxSetDataReady; 
+end procedure txSetLast; 
 
- function  rxGetData(this : in AxiRXTXSlave_axiIntBi) return size_t is begin 
+ function  txIsLast(this : in AxiRXTXSlave_axiIntBi) return boolean is begin 
 
+            return this.tx.ctrl.DataLast = '1';
+          
+end function txIsLast; 
+
+ function  txIsValid(this : in AxiRXTXSlave_axiIntBi) return boolean is begin 
+
+            return this.tx.ctrl.DataValid = '1';
+          
+end function txIsValid; 
+
+ function  txGetData(this : in AxiRXTXSlave_axiIntBi) return IntegerS_data_t is begin 
+
+            return this.tx.Data;
+          
+end function txGetData; 
+
+ function  txGetPos(this : in AxiRXTXSlave_axiIntBi) return size_t is begin 
+
+            return this.tx.position;
+          
+end function txGetPos; 
+
+ function  rxIsValidAndReady(this : in AxiRXTXSlave_axiIntBi) return boolean is begin 
+
+            return IsValid(this.rx) and wasReady(this.rx);  
+          
+end function rxIsValidAndReady; 
+
+ function  rxGetData(this : in AxiRXTXSlave_axiIntBi) return integerM_data_t is begin 
+
+            if not rxIsValidAndReady(this) then 
+              report "Error data already set";
+            end if;
             return this.rx.data;
           
 end function rxGetData; 
 
- function  rxIsLast(this : in AxiRXTXSlave_axiIntBi) return boolean is begin 
+ procedure rxSetReady(this : inout AxiRXTXSlave_axiIntBi) is begin 
 
-            return this.rx.ctrl.DataLast = '1';
+            this.rx.Ready := '1';
           
-end function rxIsLast; 
+end procedure rxSetReady; 
 
- function  rxIsValid(this : in AxiRXTXSlave_axiIntBi) return boolean is begin 
+ function  rxGetPos(this : in AxiRXTXSlave_axiIntBi) return size_t is begin 
 
-            return this.rx.ctrl.DataValid = '1';
+            return this.rx.position;
           
-end function rxIsValid; 
-
- function  rxIsValidAndReady(this : in AxiRXTXSlave_axiIntBi) return boolean is begin 
-
-            return rxIsValid(this) and this.rx.Ready1 = '1';  
-          
-end function rxIsValidAndReady; 
-
- function  rxIsPosition(this : in AxiRXTXSlave_axiIntBi; position :size_t) return boolean is begin 
-
-            return rxIsValidAndReady(this) and rxGetPosition(this) = position;
-          
-end function rxIsPosition; 
-
- procedure rxPullData(this : inout AxiRXTXSlave_axiIntBi; data :out ; position :in size_t) is begin 
-
-            if rxIsPosition(this, position) then 
-                data := this.rx.Data;
-            end if; 
-            this.rx.call_pos := this.rx.call_pos + 1;
-           
-end procedure rxPullData; 
-
- procedure rxPullData(this : inout AxiRXTXSlave_axiIntBi; data :out ) is begin 
-
-            rxPullData(this ,data,this.rx.call_pos);
-           
-end procedure rxPullData; 
-
- procedure AxiReset(this : inout AxiRXTXSlave_axiIntBi) is begin 
-
-            this.rx.Ready    := '0';
-            this.rx.call_pos := 0;
-           
-end procedure AxiReset; 
+end function rxGetPos; 
 
  -- End Pseudo class AxiRXTXSlave_axiIntBi
 

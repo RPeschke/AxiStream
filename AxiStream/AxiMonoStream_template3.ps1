@@ -3,12 +3,12 @@ function axiClass($name,$type){
     $ret =  (v_class -name $name  -entries (
          (v_member -name "ctrl"     -type "AxiCtrl" ),
          (v_member -name "data"     -type "$type"),
-         (v_member -name "Ready"    -type "AxiDataReady_t" ),
+         (v_member -name "Ready"    -type "AxiDataReady_t"  ),
          (v_member -name "Ready0"   -type "AxiDataReady_t" ),
          (v_member -name "Ready1"   -type "AxiDataReady_t" ),
          (v_member -name "position" -type "size_t" ),
          (v_procedure -name resetSender -body "
-            reset(this.Data);
+            resetData(this.Data);
             this.ctrl.DataLast  := '0';
             this.ctrl.DataValid := '0';
          "),
@@ -35,7 +35,7 @@ function axiClass($name,$type){
          "),
          (v_procedure -name ResetReceiver -body "
             this.Ready    := '0';
-            this.call_pos := 0;
+            
           "),
          (v_procedure -name pullReceiver -argumentList "RX_Data : in $type; DataLast : in sl; DataValid : in sl" -body  "
             this.Ready1 := this.Ready0;
@@ -46,12 +46,12 @@ function axiClass($name,$type){
 
             ResetReceiver(this);
           "),
-         (v_procedure -name pushReceiver -argumentList "RX_Ready : out AxiDataReady_t" -body  "
-            fromMaster.RX_Ready <= this.Ready after 1 ns;
-            AxiRxIncrementPos(this);
+         (v_procedure -name pushReceiver -argumentList "signal RX_Ready : out AxiDataReady_t" -body  "
+            RX_Ready <= this.Ready after 1 ns;
+            IncrementPosReceiver(this);
           "),
           (v_procedure -name IncrementPosReceiver  -body "
-             if rxIsValidAndReady(this) then 
+             if IsValid(this) and  wasReady(this) then 
                 this.position := this.position + 1;
                 if isLast(this) then
                     this.position := 0;
@@ -80,7 +80,7 @@ function axiClass($name,$type){
             if not IsValid(this) then 
                 report "Error data not set";
             end if;
-            this.tx.ctrl.DataLast := last;
+            this.ctrl.DataLast := last;
          '),
          (v_procedure -name SetData -argumentList "data : in $($type)" -body '
             if not IsReady(this) then 
@@ -89,7 +89,7 @@ function axiClass($name,$type){
             if IsValid(this) then 
                 report "Error data already set";
             end if;
-            this.tx.Data := data;
+            this.Data := data;
             SetValid(this);
          ')
          
@@ -97,6 +97,87 @@ function axiClass($name,$type){
         ))
 
     return $ret
+}
+
+function axiHandle($name, $txClassName,$RxClassName,$fromMasterName,$ToMasterName,$TxDataType,$RxDataType, [switch]$Slave){
+
+if($Slave){
+$AxiPullData =(v_procedure -name AxiPullData -argumentList "signal fMaster : in $($fromMasterName)" -body "
+            pullSender(this.tx, fMaster.RX_Ready);
+            pullReceiver(this.rx, fMaster.TX_Data ,fMaster.TX_ctrl.DataLast,  fMaster.TX_ctrl.DataValid);
+
+          ")
+
+$AxiPushData = (v_procedure -name   AxiPushData -argumentList "signal toMaster : out $($ToMasterName)" -body "
+            pushSender(this.tx, toMaster.RX_Data ,toMaster.RX_ctrl.DataLast,toMaster.RX_ctrl.DataValid );
+            pushReceiver(this.rx, toMaster.TX_Ready);
+          ")
+
+}else {
+
+$AxiPullData =(v_procedure -name AxiPullData -argumentList "signal tMaster : in $($ToMasterName)" -body "
+            pullSender(this.tx, tMaster.tx_ready);
+            pullReceiver(this.rx, tMaster.RX_Data ,tMaster.RX_ctrl.DataLast,  tMaster.RX_ctrl.DataValid);
+
+          ")
+
+$AxiPushData = (v_procedure -name   AxiPushData -argumentList "signal fromMaster : out $($fromMasterName)" -body "
+            pushSender(this.tx, fromMaster.TX_Data ,fromMaster.TX_ctrl.DataLast,fromMaster.TX_ctrl.DataValid );
+            pushReceiver(this.rx, fromMaster.RX_Ready);
+          ")
+}
+
+
+$ret = (v_class -name "$name" -entries (
+         (v_member -name "tx"     -type "$txClassName"),
+         (v_member -name "rx"     -type "$RxClassName"),
+         
+         $AxiPullData,
+         $AxiPushData,
+
+
+         (v_function -name txIsReady -returnType "boolean" -body  "
+             return IsReady(this.tx);
+         "),
+
+         (v_procedure -name txSetData -argumentList "data : in $($TxDataType)" -body '
+            SetData(this.tx, data);
+         '),
+         (v_procedure -name txSetLast  -body '
+            SetLast(this.tx);
+         '),
+         (v_function -name txIsLast -returnType "boolean" -body "
+            return this.tx.ctrl.DataLast = '1';
+         "),
+         (v_function -name txIsValid -returnType "boolean" -body "
+            return this.tx.ctrl.DataValid = '1';
+         "),
+         (v_function -name txGetData  -returnType "$($TxDataType)" -body "
+            return this.tx.Data;
+         "),
+         (v_function -name txGetPos  -returnType "size_t" -body "
+            return this.tx.position;
+         "),
+         (v_function -name rxIsValidAndReady -returnType "boolean" -body "
+            return IsValid(this.rx) and wasReady(this.rx);  
+         "),
+         (v_function -name rxGetData  -returnType "$($RxDataType)" -body '
+            if not rxIsValidAndReady(this) then 
+              report "Error data already set";
+            end if;
+            return this.rx.data;
+         '),
+         (v_procedure -name rxSetReady  -body "
+            this.rx.Ready := '1';
+         "),
+         (v_function -name rxGetPos  -returnType "size_t" -body "
+            return this.rx.position;
+         ")
+         
+        )
+       )
+
+       return $ret
 }
 
 
@@ -124,11 +205,11 @@ $r = "library IEEE;
   $(v_packet -name $packetName -entries (
 
         (v_subtype -name  $dataTypeNameFromMaster -type $DataTypeFromMaster -default $dataZeroFromMaster),
-        (v_procedure -name reset -argumentList "data : inout $($dataTypeNameFromMaster)" -body "data := $dataZeroFromMaster;"),
+        (v_procedure -name resetData -argumentList "data : inout $($dataTypeNameFromMaster)" -body "data := $dataZeroFromMaster;"),
 
 
         (v_subtype -name  $dataTypeNameToMaster -type $DataTypeToMaster -default $dataZeroToMaster),
-        (v_procedure -name reset -argumentList "data : inout $($dataTypeNameToMaster)" -body "data := $dataZeroToMaster;"),
+       
 
         
         (v_record -name $ToMasterName -entries (
@@ -147,120 +228,12 @@ $r = "library IEEE;
         (axiClass -name $axifromMaster -type $dataTypeNameFromMaster),
         (axiClass -name $axitoMaster -type $dataTypeNameToMaster),
  
-
-        (v_class -name "$masterRecName" -entries (
-         (v_member -name "tx"     -type "$axifromMaster"),
-         (v_member -name "rx"     -type "$axitoMaster"),
-         
-         (v_procedure -name AxiPullData -argumentList "signal tMaster : in $($ToMasterName)" -body "
-            pullSender(this.tx, tMaster.tx_ready);
-            pullReceiver(this.rx, tMaster.RX_Data ,tMaster.RX_ctrl.DataLast,  tMaster.RX_ctrl.DataValid);
-
-          "),
-          (v_procedure -name   AxiPushData -argumentList "signal fromMaster : out $($fromMasterName)" -body "
-            pushSender(this.tx, fromMaster.TX_Data ,fromMaster.TX_ctrl.DataLast,fromMaster.TX_ctrl.DataValid );
-            pushReceiver(this.rx, fromMaster.RX_Ready);
-          "),
-
-
-         (v_function -name txIsReady -returnType "boolean" -body  "
-             return IsReady(this.tx);
-         "),
-
-         (v_procedure -name txSetData -argumentList "data : in $($dataTypeNameFromMaster)" -body '
-            SetData(this.tx, data);
-         '),
-         (v_procedure -name txSetLast  -body '
-            SetLast(this.tx);
-         '),
-         (v_function -name txIsLast -returnType "boolean" -body "
-            return this.tx.ctrl.DataLast = '1';
-         "),
-         (v_function -name txIsValid -returnType "boolean" -body "
-            return this.tx.ctrl.DataValid = '1';
-         "),
-         (v_function -name txGetData  -returnType "$($dataTypeNameFromMaster)" -body "
-            return this.tx.Data;
-         "),
-
-         (v_function -name rxIsValidAndReady -returnType "boolean" -body "
-            return IsValid(this.rx) and wasReady(this.rx);  
-         "),
-         (v_function -name rxGetData  -returnType "$($dataTypeNameToMaster)" -body '
-            if not rxIsValidAndReady(this) then 
-              report "Error data already set";
-            end if;
-            return this.rx.data;
-         '),
-         (v_procedure -name rxSetReady  -body "
-            this.rx.Ready := '1';
-         ")
-         
-        )
-       ),
+        (axiHandle -name $masterRecName -txClassName $axifromMaster -fromMasterName $fromMasterName -TxDataType $dataTypeNameFromMaster -RxClassName $axitoMaster -ToMasterName $ToMasterName -RxDataType $dataTypeNameToMaster),
+        (axiHandle -name $slaveRecName -txClassName $axitoMaster -fromMasterName $fromMasterName -TxDataType $dataTypeNameToMaster -RxClassName $axifromMaster -ToMasterName $ToMasterName -RxDataType $dataTypeNameFromMaster -Slave)
 
 
 
-       (v_class -name $slaveRecName -entries (
-        (v_member -name "RX" -type $axiName),
-        (v_procedure -name AxiPullData -argumentList "signal fromMaster : in $($fromMasterName)" -body "
-            this.RX.Ready1 := this.Rx.Ready0;
-            this.RX.Ready0 := this.Rx.Ready;
-            this.Rx.Data  := fromMaster.TX_Data;
-            this.Rx.ctrl.DataLast  := fromMaster.TX_ctrl.DataLast;
-            this.Rx.ctrl.DataValid := fromMaster.TX_ctrl.DataValid;
-            AxiReset(this);
-        "),
-        (v_procedure -name AxiTxIncrementPos  -body "
-             if rxIsValidAndReady(this) then 
-                this.rx.position := this.rx.position + 1;
-                if rxIsLast(this) then
-                    this.rx.position := 0;
-                end if;
-             end if;
-        "),
-        (v_procedure -name AxiPushData -argumentList "signal toMaster : out $($ToMasterName)" -body "
-            toMaster.TX_Ready <= this.rx.Ready after 1 ns;
-            AxiTxIncrementPos(this);
-         "),
-         (v_function -name rxIsDataReady  -returnType "boolean" -body "
-            return this.rx.Ready1 = '1';
-         "),
-         (v_function -name rxGetPosition   -returnType "size_t" -body "
-            return this.rx.position;
-         "),
-         (v_procedure -name rxSetDataReady  -body "
-            this.rx.Ready := '1';
-         "),
-         (v_function -name rxGetData  -returnType "size_t" -body "
-            return this.rx.data;
-         "),
-         (v_function -name rxIsLast -returnType "boolean" -body "
-            return this.rx.ctrl.DataLast = '1';
-         "),
-         (v_function -name rxIsValid  -returnType "boolean" -body "
-            return this.rx.ctrl.DataValid = '1';
-         "),
-         (v_function -name rxIsValidAndReady -returnType "boolean" -body "
-            return rxIsValid(this) and this.rx.Ready1 = '1';  
-         "),
-         (v_function -name rxIsPosition -argumentList "position :size_t" -returnType "boolean" -body "
-            return rxIsValidAndReady(this) and rxGetPosition(this) = position;
-         "),
-         (v_procedure -name rxPullData -argumentList "data :out $($dataTypeName); position :in size_t" -body "
-            if rxIsPosition(this, position) then 
-                data := this.rx.Data;
-            end if; 
-            this.rx.call_pos := this.rx.call_pos + 1;
-          "),
-          (v_procedure -name rxPullData -argumentList "data :out $($dataTypeName)" -body "
-            rxPullData(this ,data,this.rx.call_pos);
-          "),
-          (v_procedure -name AxiReset -body "
-            this.rx.Ready    := '0';
-            this.rx.call_pos := 0;
-          ")
-       ))
+
     
 
 ))"

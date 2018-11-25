@@ -31,7 +31,7 @@ package AxiMonoStream is
     TX_Data  : data_t; 
   end record AxiMonoFromMaster_t;
   
-  constant c_AxiMonoFromMaster_t : AxiMonoFromMaster_t := (TX_ctrl => c_axiCtrl, TX_Data => 0);
+  constant c_AxiMonoFromMaster_t : AxiMonoFromMaster_t := (TX_ctrl => axiCtrl_null, TX_Data => 0);
   
 
   type AxiBiDirectional is record
@@ -55,7 +55,7 @@ package AxiMonoStream is
 
 
   -- TX interface  
-  procedure txSetData(RXTX : out AxiMonoSendReceiveMaster; data : in data_t; valid : in sl := '1' );
+  procedure txSetData(RXTX : inout AxiMonoSendReceiveMaster; data : in data_t; valid : in sl := '1' );
   procedure txSetLast(RXTX : out AxiMonoSendReceiveMaster; last : in sl := '1');
 
   procedure txPushData(RXTX : inout AxiMonoSendReceiveMaster;   data : in data_t);
@@ -114,9 +114,9 @@ package body AxiMonoStream is
 
   procedure AxiTxIncrementPos(RXTX: inout AxiMonoSendReceiveMaster) is begin
     if txIsValid(RXTX) and txIsDataReady(RXTX) then 
-      RXTX.tx.pos := RXTX.tx.pos + 1;
+      RXTX.tx.position := RXTX.tx.position + 1;
       if txIsLast(RXTX) then
-        RXTX.tx.pos := 0;
+        RXTX.tx.position := 0;
       end if;
     end if;
 
@@ -143,9 +143,9 @@ package body AxiMonoStream is
 
   procedure AxiTxIncrementPos(RXTX: inout AxiMonoSendReceiveSlave) is begin
     if rxIsValidAndReady(RXTX) then 
-      RXTX.rx.pos := RXTX.rx.pos + 1;
+      RXTX.rx.position := RXTX.rx.position + 1;
       if rxIsLast(RXTX) then
-        RXTX.rx.pos := 0;
+        RXTX.rx.position := 0;
       end if;
     end if;
 
@@ -160,7 +160,7 @@ package body AxiMonoStream is
   end procedure AxiPushData;
 
 
-  procedure txSetData(RXTX : out AxiMonoSendReceiveMaster; data : in data_t; valid : in sl := '1' ) is begin
+  procedure txSetData(RXTX : inout AxiMonoSendReceiveMaster; data : in data_t; valid : in sl := '1' ) is begin
     if not txIsDataReady(RXTX) then 
       report "Error";
     end if;
@@ -177,14 +177,14 @@ package body AxiMonoStream is
   end procedure txPushData;
 
   procedure txPushData(RXTX : inout AxiMonoSendReceiveMaster;   data : in data_t; position : in size_t) is begin 
-    if position = RXTX.tx.pos then  
+    if position = RXTX.tx.position then  
       txSetData(RXTX, data);
     end if;
     RXTX.tx.call_pos := position +1;
   end procedure txPushData;
 
   procedure txPushLast(RXTX : inout AxiMonoSendReceiveMaster) is begin
-    if RXTX.tx.call_pos = RXTX.tx.pos+1 then  
+    if RXTX.tx.call_pos = RXTX.tx.position+1 then  
       txSetLast(RXTX);
     end if;
     RXTX.tx.call_pos := RXTX.tx.call_pos +1;
@@ -212,7 +212,7 @@ package body AxiMonoStream is
   end function rxIsDataReady;
 
   function rxGetPosition(RXTX: in AxiMonoSendReceiveSlave) return size_t is begin
-    return RXTX.rx.pos;
+    return RXTX.rx.position;
   end function rxGetPosition;
 
   function txIsDataReady(RXTX : AxiMonoSendReceiveMaster) return boolean is begin
@@ -220,7 +220,7 @@ package body AxiMonoStream is
   end function txIsDataReady;
 
   function txGetPosition(RXTX : in AxiMonoSendReceiveMaster) return size_t is begin
-    return RXTX.tx.pos;
+    return RXTX.tx.position;
   end function txGetPosition;
 
   procedure rxSetDataReady(RXTX : out AxiMonoSendReceiveSlave) is begin
