@@ -21,9 +21,13 @@
 function make_packet_entry($header, $body){
     return [vc_packet_entry]::new($header,$body);
 }
-function v_subtype($name,$type){
+function v_subtype($name,$type,$default){
 
-  $r1  = make_packet_entry -header "subtype  $($name) is $($type);`n"
+  $h = "subtype  $($name) is $($type);`n"
+  if($default -ne $null){
+    $h += "constant $(v_record_null $name) : $type := $default; `n"
+  }
+  $r1  = make_packet_entry -header $h
   return $r1
 }
 

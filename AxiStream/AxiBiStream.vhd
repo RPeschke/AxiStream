@@ -10,29 +10,38 @@ package AxiBiStream is
 
 
 
-  type AxiStream is record
+  type AxiStream1 is record
     ctrl  : AxiCtrl;
-    data  : Data_t;
+    data  : Data_t1;
     Ready : AxiDataReady_t;
     lastReady : AxiDataReady_t;
     pos   :  size_t ;
     call_pos :  size_t;
-  end record AxiStream;
+  end record AxiStream1;
+  
+  type AxiStream2 is record
+    ctrl  : AxiCtrl;
+    data  : Data_t2;
+    Ready : AxiDataReady_t;
+    lastReady : AxiDataReady_t;
+    pos   :  size_t ;
+    call_pos :  size_t;
+  end record AxiStream2;
 
   type AxiSendRecieve is record
-    rx : AxiStream;
-    tx : AxiStream;
+    rx : AxiStream2;
+    tx : AxiStream1;
   end record AxiSendRecieve;
 
   type AxiToMaster_t is record
     RX_ctrl  : AxiCtrl;
-    RX_Data  : data_t;
+    RX_Data  : data_t2;
     TX_Ready : AxiDataReady_t;
   end record AxiToMaster_t;
 
   type AxiFromMaster_t is record
     TX_ctrl  : AxiCtrl;
-    TX_data  : data_t;
+    TX_data  : data_t1;
     RX_Ready : AxiDataReady_t;
   end record AxiFromMaster_t;
 
