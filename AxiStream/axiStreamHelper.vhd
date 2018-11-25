@@ -8,20 +8,22 @@ package axiStreamHelper is
 
 
   subtype data_t is integer;
-  subtype size_t is integer ;
+ -- subtype size_t is integer ;
 
-  type AxiData is record
-    Data      : data_t;
+  type AxiCtrl is record
     DataValid : sl;
     DataLast  : sl;
-  end record AxiData;
-
+  end record AxiCtrl;
+  
+  constant c_axiCtrl : AxiCtrl := (DataValid=> '0', DataLast => '0');
+  
   subtype AxiDataReady_t is std_logic;  
   
   type AxiStream is record
-    data  : AxiData;
+    ctrl  : AxiCtrl;
+    data : data_t;
     Ready : AxiDataReady_t;
-	 Ready0 : AxiDataReady_t;
+	  Ready0 : AxiDataReady_t;
     Ready1 : AxiDataReady_t;
     pos   :  size_t ;
     call_pos :  size_t;

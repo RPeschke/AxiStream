@@ -13,8 +13,8 @@ architecture rtl of tb_streamTest is
 
   
 
-signal fMaster : AxiMonoFromMaster_t;
-signal tMaster : AxiMonoToMaster_t;
+signal fMaster : AxiMonoFromMaster_t := c_AxiMonoFromMaster_t;
+signal tMaster : AxiMonoToMaster_t := c_AxiMonoToMaster_t;
 signal clk : sl;
 signal data_stream : t_integer_array(3 downto 0);
 constant usrClk_period : time := 10 ns;

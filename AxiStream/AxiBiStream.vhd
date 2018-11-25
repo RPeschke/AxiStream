@@ -11,7 +11,8 @@ package AxiBiStream is
 
 
   type AxiStream is record
-    data  : AxiData;
+    ctrl  : AxiCtrl;
+    data  : Data_t;
     Ready : AxiDataReady_t;
     lastReady : AxiDataReady_t;
     pos   :  size_t ;
@@ -24,12 +25,14 @@ package AxiBiStream is
   end record AxiSendRecieve;
 
   type AxiToMaster_t is record
-    RX_data  : AxiData;
+    RX_ctrl  : AxiCtrl;
+    RX_Data  : data_t;
     TX_Ready : AxiDataReady_t;
   end record AxiToMaster_t;
 
   type AxiFromMaster_t is record
-    TX_data  : AxiData;
+    TX_ctrl  : AxiCtrl;
+    TX_data  : data_t;
     RX_Ready : AxiDataReady_t;
   end record AxiFromMaster_t;
 
@@ -106,7 +109,7 @@ package body AxiBiStream is
 
   function isTXValid(RXTX: in AxiSendRecieve) return boolean is begin
 
-    return RXTX.tx.data.DataValid = '1';
+    return RXTX.tx.ctrl.DataValid = '1';
   end isTXValid;
 
   procedure AxiTxIncrementPos(RXTX: inout AxiSendRecieve) is begin
@@ -128,7 +131,7 @@ package body AxiBiStream is
   procedure AxiMasterPullData(RXTX : inout AxiSendRecieve; toMaster : in AxiToMaster_t) is begin
     RXTX.tx.lastReady := RXTX.tx.Ready;
     RXTX.rx.lastReady := RXTX.rx.Ready;
-    RXTX.rx.data  := toMaster.RX_data;
+    RXTX.rx.ctrl  := toMaster.RX_ctrl;
     RXTX.tx.Ready := toMaster.TX_Ready;
 
     AxiTxIncrementPos(RXTX);
@@ -138,7 +141,7 @@ package body AxiBiStream is
   procedure AxiSlavePullData(RXTX : inout AxiSendRecieve; fromMaster : in AxiFromMaster_t) is  begin
     RXTX.tx.lastReady := RXTX.tx.Ready;
     RXTX.rx.lastReady := RXTX.rx.Ready;
-    RXTX.rx.data  := fromMaster.TX_data;
+    RXTX.rx.ctrl  := fromMaster.TX_ctrl;
     RXTX.tx.Ready := fromMaster.RX_Ready;
 
 
@@ -148,17 +151,17 @@ package body AxiBiStream is
 
   procedure  AxiMasterPushData(RXTX : in AxiSendRecieve; signal fromMaster : out AxiFromMaster_t) is
   begin
-    fromMaster.TX_data.Data  <= RXTX.tx.data.Data after 10 ns;
-    fromMaster.TX_data.DataLast <= RXTX.tx.data.DataLast after 10 ns;;
-    fromMaster.TX_data.DataValid <= RXTX.tx.data.DataValid after 10 ns;;
+    fromMaster.TX_data <= RXTX.tx.Data after 10 ns;
+    fromMaster.TX_ctrl.DataLast <= RXTX.tx.ctrl.DataLast after 10 ns;
+    fromMaster.TX_ctrl.DataValid <= RXTX.tx.ctrl.DataValid after 10 ns;
     fromMaster.RX_Ready <= RXTX.rx.Ready after 10 ns;
   end procedure AxiMasterPushData;
 
   procedure AxiSlavePushData(RXTX : in AxiSendRecieve ; signal toMaster : out AxiToMaster_t) is
   begin
-    toMaster.RX_data.Data  <= RXTX.tx.data.Data after 10 ns;
-    toMaster.RX_data.DataLast <= RXTX.tx.data.DataLast after 10 ns;
-    toMaster.RX_data.DataValid <= RXTX.tx.data.DataValid after 10 ns;
+    toMaster.RX_Data <= RXTX.tx.Data after 10 ns;
+    toMaster.RX_ctrl.DataLast <= RXTX.tx.ctrl.DataLast after 10 ns;
+    toMaster.RX_ctrl.DataValid <= RXTX.tx.ctrl.DataValid after 10 ns;
     toMaster.TX_Ready <= RXTX.rx.Ready after 10 ns;
   end procedure AxiSlavePushData;
 
@@ -167,7 +170,7 @@ package body AxiBiStream is
     variable AxitRXTX : out AxiSendRecieve
   ) is
   begin
-    AxitRXTX.tx.data  := AxiIn.TX_data;
+    AxitRXTX.tx.ctrl  := AxiIn.TX_ctrl;
     AxitRXTX.rx.Ready := AxiIn.RX_Ready;
 
   end AxiFromMaster2TX;
@@ -177,7 +180,7 @@ package body AxiBiStream is
     variable AxitRXTX : out AxiSendRecieve
   ) is
   begin
-    AxitRXTX.rx.data  := AxiIn.TX_data;
+    AxitRXTX.rx.ctrl  := AxiIn.TX_ctrl;
     AxitRXTX.tx.Ready := AxiIn.RX_Ready;
 
   end AxiFromMaster2RX;
@@ -187,8 +190,8 @@ package body AxiBiStream is
   ) is
   begin
     AxitRXTX.rx.Ready          := '0';
-    AxitRXTX.tx.Data.DataValid := '0';
-    AxitRXTX.tx.Data.DataLast  := '0';
+    AxitRXTX.tx.ctrl.DataValid := '0';
+    AxitRXTX.tx.ctrl.DataLast  := '0';
     AxitRXTX.tx.call_pos := 0;
     AxitRXTX.rx.call_pos := 0;
   end AxiReset;
@@ -200,46 +203,46 @@ package body AxiBiStream is
 
   procedure setTXData(RXTX : out AxiSendRecieve; data : in data_t; valid :in sl := '1') is
   begin
-    RXTX.tx.Data.Data := data;
-    RXTX.tx.data.DataValid := valid;
+    RXTX.tx.Data := data;
+    RXTX.tx.ctrl.DataValid := valid;
   end setTXData;
 
 
 
   procedure setTXValid(RXTX : out AxiSendRecieve; valid : in sl) is
   begin
-    RXTX.tx.Data.DataValid := valid;
+    RXTX.tx.ctrl.DataValid := valid;
   end setTXValid;
 
   procedure setTXLast(RXTX : out AxiSendRecieve; last : in sl := '1') is
   begin
-    RXTX.tx.Data.DataLast := last;
+    RXTX.tx.ctrl.DataLast := last;
   end setTXLast;
 
   function getTXData(RXTX : in AxiSendRecieve) return data_t is
   begin
-    return RXTX.tx.data.Data;
+    return RXTX.tx.Data;
   end getTXData;
 
   function isTXLast(RXTX : in AxiSendRecieve) return boolean is
   begin
-    return RXTX.tx.data.DataLast = '1';
+    return RXTX.tx.ctrl.DataLast = '1';
   end isTXLast;
   function rxLast(RXTX : AxiSendRecieve) return boolean is
   begin
-    return RXTX.rx.Data.DataLast = '1';
+    return RXTX.rx.ctrl.DataLast = '1';
 
   end rxLast;
 
   function rxValid(RXTX : AxiSendRecieve) return boolean is
   begin
-    return RXTX.rx.Data.DataValid = '1';
+    return RXTX.rx.ctrl.DataValid = '1';
 
   end rxValid;
 
   function rxData(RXTX : AxiSendRecieve) return data_t is
   begin
-    return RXTX.rx.Data.Data;
+    return RXTX.rx.Data;
 
   end rxData;
 
@@ -284,13 +287,13 @@ package body AxiBiStream is
   procedure AxiResetChannel(signal fMaster : out AxiFromMaster_t ;signal  tmaster : out AxiToMaster_t) is begin
 
     fMaster.RX_Ready <= '0';
-    fMaster.TX_data.Data <= 0; 
-    fMaster.TX_data.DataLast <='0';
-    fMaster.TX_data.DataValid <= '0';
+    fMaster.TX_data  <= 0; 
+    fMaster.TX_ctrl.DataLast <='0';
+    fMaster.TX_ctrl.DataValid <= '0';
 
-    tmaster.RX_data.Data <= 0;
-    tmaster.RX_data.DataLast <= '0';
-    tmaster.RX_data.DataValid <= '0';
+    tmaster.RX_Data <= 0;
+    tmaster.RX_ctrl.DataLast <= '0';
+    tmaster.RX_ctrl.DataValid <= '0';
     tmaster.TX_Ready <= '0';
   end AxiResetChannel;
   type AxiSendRecieveVector is array (natural range <>) of AxiSendRecieve;

@@ -46,7 +46,7 @@ begin
       counter_full := counter_full +1;
 
       counter := counter +1;
-      AxiMonoSlavePullData(RXTX, fromMaster);
+      AxiPullData(RXTX, fromMaster);
       data := rxGetData(RXTX);
       if  counter > 3 then 
         rxSetDataReady(RXTX);
@@ -65,7 +65,7 @@ begin
       end if;
 
       report "slave " &  integer'image(counter) & "  "  & integer'image(data);
-      AxiSlavePushData(RXTX, toMaster);
+      AxiPushData(RXTX, toMaster);
 
     end if;
   end process seq;

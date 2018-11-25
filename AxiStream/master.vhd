@@ -42,7 +42,7 @@ begin
         RXTX.tx.pos := 0;
 
       end if;
-      AxiMonoMasterPullData(RXTX, toMaster);
+      AxiPullData(RXTX, toMaster);
 
       if txIsDataReady(RXTX) then 
         txPushData(RXTX, 1,0);
@@ -55,7 +55,7 @@ begin
       end if;
 
 
-      AxiMasterPushData(RXTX, fromMaster);
+      AxiPushData(RXTX, fromMaster);
 
 
     end if;

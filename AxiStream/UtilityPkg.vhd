@@ -18,6 +18,7 @@ package UtilityPkg is
    -- Shorthand names for common types
    subtype sl is std_logic;
    subtype slv is std_logic_vector;
+   subtype size_t is integer ;
    -- Useful array types
    type Word8Array  is array (natural range <>) of slv( 7 downto 0);
    type Word9Array  is array (natural range <>) of slv( 8 downto 0);
