@@ -40,12 +40,27 @@ function v_record($Name,$entries){
     $header += $entries.getEntry();
   }
 
-  $header += "`nend record $Name; `n`n`n"
+  $header += "`nend record $Name; `n`n"
 
+  
+  $def = ""
+    foreach($x in $entries){
+        $def += $x.getDefault();
+    }
+  if ($def.length -gt 0){
+    $header += "constant  $(v_record_null $Name): $Name := ("
+    $header +=$def.Substring(0,$def.Length-2)
+    $header += ");`n`n"
+  }
   $ret = make_packet_entry -header $header
   return $ret;
 }
 
+
+function v_record_null($Name){
+return "$($Name)_null"
+
+}
 
 function v_packet($name, $entries){
 

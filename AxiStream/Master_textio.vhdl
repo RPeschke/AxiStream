@@ -38,7 +38,7 @@ begin
       state := state +1;
       if state < 2 then 
         file_open(input_buf, FileName,  read_mode); 
-        RXTX.tx.pos := 0;
+        RXTX.tx.position := 0;
       end if;
 
       AxiPullData(RXTX, toMaster);

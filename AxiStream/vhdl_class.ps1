@@ -1,18 +1,34 @@
 ﻿class vc_member{
-[string]$name
-[string]$type
-vc_member($name,$type){
-$this.name = $name
-$this.type = $type
-}
+    [string]$name
+    [string]$type
+    [string]$default
+    vc_member($name,$type, $default){
+        $this.name = $name
+        $this.type = $type
+        $this.default = $default
+    }
 
-[string]getEntry(){
-$ret ="$($this.name) : $($this.type); `n"
-return $ret
+    [string]getEntry(){
+        $ret ="$($this.name) : $($this.type); `n"
+        return $ret
+    }
+
+    [string]getDefault(){
+        $ret =""
+        if($this.default.Length -gt 0){
+            $ret = "$($this.name) => $($this.default),`n" 
+        }
+        return $ret
+    }
 }
+function v_member($name,$type,$default,[switch]$NoDefault){
+if($default -eq $null){
+    $default = v_record_null -Name $type
 }
-function v_member($name,$type){
-return [vc_member]::new($name,$type)
+if($NoDefault){
+    $default =""
+}
+return [vc_member]::new($name,$type,$default)
 }
 
 class vc_class{

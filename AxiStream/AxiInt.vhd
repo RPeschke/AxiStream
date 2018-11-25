@@ -16,11 +16,18 @@ data : AxiInt_data_t;
 Ready : AxiDataReady_t; 
 Ready0 : AxiDataReady_t; 
 Ready1 : AxiDataReady_t; 
-pos : size_t; 
+position : size_t; 
 call_pos : size_t; 
 
 end record AxiInt; 
 
+constant  AxiInt_null: AxiInt := (ctrl => AxiCtrl_null,
+data => 0,
+Ready => AxiDataReady_t_null,
+Ready0 => AxiDataReady_t_null,
+Ready1 => AxiDataReady_t_null,
+position => size_t_null,
+call_pos => size_t_null);
 
 
 type AxiToMaster_AxiInt is record 
@@ -28,6 +35,7 @@ TX_Ready : AxiDataReady_t;
 
 end record AxiToMaster_AxiInt; 
 
+constant  AxiToMaster_AxiInt_null: AxiToMaster_AxiInt := (TX_Ready => AxiDataReady_t_null);
 
 
 type AxiFromMaster_AxiInt is record 
@@ -36,6 +44,8 @@ TX_Data : AxiInt_data_t;
 
 end record AxiFromMaster_AxiInt; 
 
+constant  AxiFromMaster_AxiInt_null: AxiFromMaster_AxiInt := (TX_ctrl => AxiCtrl_null,
+TX_Data => 0);
 
 
 
@@ -46,9 +56,11 @@ tx : AxiInt;
 
 end record AxiRXTXMaster_AxiInt; 
 
+constant  AxiRXTXMaster_AxiInt_null: AxiRXTXMaster_AxiInt := (tx => AxiInt_null);
 
  procedure AxiPullData(this : inout AxiRXTXMaster_AxiInt; signal tMaster : in AxiToMaster_AxiInt);
  procedure AxiTxIncrementPos(this : inout AxiRXTXMaster_AxiInt);
+ function  txIsDataReady(this : in AxiRXTXMaster_AxiInt) return boolean;
  procedure AxiPushData(this : inout AxiRXTXMaster_AxiInt; signal fromMaster : out AxiFromMaster_AxiInt);
  procedure txSetData(this : inout AxiRXTXMaster_AxiInt; data : in AxiInt_data_t);
  procedure txSetLast(this : inout AxiRXTXMaster_AxiInt; last : in sl := '1');
@@ -71,6 +83,7 @@ RX : AxiInt;
 
 end record AxiRXTXSlave_AxiInt; 
 
+constant  AxiRXTXSlave_AxiInt_null: AxiRXTXSlave_AxiInt := (RX => AxiInt_null);
 
  procedure AxiPullData(this : inout AxiRXTXSlave_AxiInt; signal fromMaster : in AxiFromMaster_AxiInt);
  procedure AxiTxIncrementPos(this : inout AxiRXTXSlave_AxiInt);
@@ -112,13 +125,19 @@ end procedure AxiPullData;
  procedure AxiTxIncrementPos(this : inout AxiRXTXMaster_AxiInt) is begin 
 
             if txIsValid(this) and txIsDataReady(this) then 
-              this.tx.pos := this.tx.pos + 1;
+              this.tx.position := this.tx.position + 1;
               if txIsLast(this) then
-                this.tx.pos := 0;
+                this.tx.position := 0;
               end if;
             end if;
           
 end procedure AxiTxIncrementPos; 
+
+ function  txIsDataReady(this : in AxiRXTXMaster_AxiInt) return boolean is begin 
+
+             return this.tx.Ready = '1';
+          
+end function txIsDataReady; 
 
  procedure AxiPushData(this : inout AxiRXTXMaster_AxiInt; signal fromMaster : out AxiFromMaster_AxiInt) is begin 
 
@@ -132,13 +151,23 @@ end procedure AxiPushData;
  procedure txSetData(this : inout AxiRXTXMaster_AxiInt; data : in AxiInt_data_t) is begin 
 
             if not txIsDataReady(this) then 
-                report  
+                report "Error slave is not ready";
+            end if;
+            if txIsValid(this) then 
+                report "Error data already set";
+            end if;
+            this.tx.Data := data;
+            txSetValid(this);
+          
 end procedure txSetData; 
 
  procedure txSetLast(this : inout AxiRXTXMaster_AxiInt; last : in sl := '1') is begin 
 
             if not txIsValid(this) then 
-                report  
+                report "Error data not set";
+            end if;
+            this.tx.ctrl.DataLast := last;
+          
 end procedure txSetLast; 
 
  procedure txPushData(this : inout AxiRXTXMaster_AxiInt; data : in AxiInt_data_t) is begin 
@@ -149,7 +178,7 @@ end procedure txPushData;
 
  procedure txPushData(this : inout AxiRXTXMaster_AxiInt; data : in AxiInt_data_t; position : in size_t) is begin 
 
-            if position = this.tx.pos then  
+            if position = this.tx.position then  
                 txSetData(this, data);
             end if;
             this.tx.call_pos := position +1;
@@ -158,7 +187,7 @@ end procedure txPushData;
 
  procedure txPushLast(this : inout AxiRXTXMaster_AxiInt) is begin 
 
-            if this.tx.call_pos = this.tx.pos+1 then  
+            if this.tx.call_pos = this.tx.position+1 then  
                 txSetLast(this);
             end if;
             this.tx.call_pos := this.tx.call_pos +1;
@@ -216,9 +245,9 @@ end procedure AxiPullData;
  procedure AxiTxIncrementPos(this : inout AxiRXTXSlave_AxiInt) is begin 
 
              if rxIsValidAndReady(this) then 
-                this.rx.pos := this.rx.pos + 1;
+                this.rx.position := this.rx.position + 1;
                 if rxIsLast(this) then
-                    this.rx.pos := 0;
+                    this.rx.position := 0;
                 end if;
              end if;
          
@@ -239,7 +268,7 @@ end function rxIsDataReady;
 
  function  rxGetPosition(this : in AxiRXTXSlave_AxiInt) return size_t is begin 
 
-            return this.rx.pos;
+            return this.rx.position;
           
 end function rxGetPosition; 
 

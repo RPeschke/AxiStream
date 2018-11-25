@@ -15,19 +15,25 @@ package axiStreamHelper is
     DataLast  : sl;
   end record AxiCtrl;
   
-  constant c_axiCtrl : AxiCtrl := (DataValid=> '0', DataLast => '0');
+  constant axiCtrl_null : AxiCtrl := (DataValid=> '0', DataLast => '0');
   
   subtype AxiDataReady_t is std_logic;  
+  constant AxiDataReady_t_null : AxiDataReady_t := '0';
   
   type AxiStream is record
     ctrl  : AxiCtrl;
-    data : data_t;
     Ready : AxiDataReady_t;
 	  Ready0 : AxiDataReady_t;
     Ready1 : AxiDataReady_t;
-    pos   :  size_t ;
+    position   :  size_t ;
     call_pos :  size_t;
   end record AxiStream;
   
-  
+  constant c_axiStream : AxiStream := (
+    ctrl=> axiCtrl_null, 
+    Ready => 0,
+    Ready0 =>0,
+    Ready1 => 0,  
+    position => 0, 
+    call_pos => 0);
 end axiStreamHelper;

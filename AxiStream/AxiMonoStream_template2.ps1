@@ -24,13 +24,13 @@ $r = "library IEEE;
 
 
         (v_record -name "$axiName" -entries (
-         (v_member -name "ctrl"     -type "AxiCtrl"),
-         (v_member -name "data"     -type "$dataTypeName"),
-         (v_member -name "Ready"    -type "AxiDataReady_t"),
-         (v_member -name "Ready0"   -type "AxiDataReady_t"),
-         (v_member -name "Ready1"   -type "AxiDataReady_t"),
-         (v_member -name "pos"      -type "size_t"),
-         (v_member -name "call_pos" -type "size_t")
+         (v_member -name "ctrl"     -type "AxiCtrl" ),
+         (v_member -name "data"     -type "$dataTypeName" -default $dataZero),
+         (v_member -name "Ready"    -type "AxiDataReady_t" ),
+         (v_member -name "Ready0"   -type "AxiDataReady_t" ),
+         (v_member -name "Ready1"   -type "AxiDataReady_t" ),
+         (v_member -name "position"      -type "size_t" ),
+         (v_member -name "call_pos" -type "size_t" )
         )),
         
         (v_record -name $ToMasterName -entries (
@@ -39,7 +39,7 @@ $r = "library IEEE;
 
         (v_record -name $fromMasterName -entries (
           (v_member -name "TX_ctrl" -type "AxiCtrl"),
-          (v_member -name "TX_Data" -type "$dataTypeName")
+          (v_member -name "TX_Data" -type "$dataTypeName" -default $dataZero)
         )),
 
         (v_class -name "$masterRecName" -entries (
@@ -54,11 +54,14 @@ $r = "library IEEE;
          "),
           (v_procedure -name AxiTxIncrementPos -body "
             if txIsValid(this) and txIsDataReady(this) then 
-              this.tx.pos := this.tx.pos + 1;
+              this.tx.position := this.tx.position + 1;
               if txIsLast(this) then
-                this.tx.pos := 0;
+                this.tx.position := 0;
               end if;
             end if;
+         "),
+         (v_function -name txIsDataReady -returnType "boolean" -body  "
+             return this.tx.Ready = '1';
          "),
          (v_procedure -name   AxiPushData -argumentList "signal fromMaster : out $($fromMasterName)" -body "
             fromMaster.TX_Data  <= this.tx.Data after 1 ns;
@@ -66,33 +69,33 @@ $r = "library IEEE;
             fromMaster.TX_ctrl.DataValid <= this.tx.ctrl.DataValid after 1 ns;
             AxiTxIncrementPos(this);
          "),
-         (v_procedure -name txSetData -argumentList "data : in $($dataTypeName)" -body "
+         (v_procedure -name txSetData -argumentList "data : in $($dataTypeName)" -body '
             if not txIsDataReady(this) then 
-                report `"Error slave is not ready`";
+                report "Error slave is not ready";
             end if;
             if txIsValid(this) then 
-                report `"Error data already set`";
+                report "Error data already set";
             end if;
             this.tx.Data := data;
             txSetValid(this);
-         "),
-         (v_procedure -name txSetLast -argumentList "last : in sl := '1'" -body "
+         '),
+         (v_procedure -name txSetLast -argumentList "last : in sl := '1'" -body '
             if not txIsValid(this) then 
-                report `"Error data not set`";
+                report "Error data not set";
             end if;
             this.tx.ctrl.DataLast := last;
-         "),
+         '),
          (v_procedure -name txPushData -argumentList "data : in $($dataTypeName)" -body "
             txPushData(this, data, this.tx.call_pos);
           "), 
          (v_procedure -name txPushData -argumentList "data : in $($dataTypeName); position : in size_t" -body "
-            if position = this.tx.pos then  
+            if position = this.tx.position then  
                 txSetData(this, data);
             end if;
             this.tx.call_pos := position +1;
          "),     
          (v_procedure -name txPushLast  -body "
-            if this.tx.call_pos = this.tx.pos+1 then  
+            if this.tx.call_pos = this.tx.position+1 then  
                 txSetLast(this);
             end if;
             this.tx.call_pos := this.tx.call_pos +1;
@@ -132,9 +135,9 @@ $r = "library IEEE;
         "),
         (v_procedure -name AxiTxIncrementPos  -body "
              if rxIsValidAndReady(this) then 
-                this.rx.pos := this.rx.pos + 1;
+                this.rx.position := this.rx.position + 1;
                 if rxIsLast(this) then
-                    this.rx.pos := 0;
+                    this.rx.position := 0;
                 end if;
              end if;
         "),
@@ -146,7 +149,7 @@ $r = "library IEEE;
             return this.rx.Ready1 = '1';
          "),
          (v_function -name rxGetPosition   -returnType "size_t" -body "
-            return this.rx.pos;
+            return this.rx.position;
          "),
          (v_procedure -name rxSetDataReady  -body "
             this.rx.Ready := '1';
