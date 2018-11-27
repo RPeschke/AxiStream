@@ -19,7 +19,7 @@ class vc_function{
         $this.argumentList=$argumentList
         $this.returnType=$returnType
         $this.body=$body
-        $this.Modifier="in"
+        $this.Modifier=" "
     }
     setClass($className){
         
