@@ -33,7 +33,52 @@ return [vc_member]::new($name,$type,$default)
 
 class vc_class{
 [System.Object[]]$entries;
+[string]$name;
 
+
+    vc_class($name,$entries){
+        $this.name = $name
+        $this.entries = $entries
+    }
+
+    [System.Object[]]getEntries(){
+            $ret=@()
+            $ret+= make_packet_entry -header "`n`n-- Starting Pseudo class $($this.name)`n" -body "`n`n-- Starting Pseudo class $($this.name)`n"
+
+            $member = $this.entries | where{$_.GetType().name -eq "vc_member"}
+            $function =  $this.entries | where{$_.GetType().name -ne "vc_member"}
+
+            $b1 = v_record -Name $this.name -entries $member
+
+
+            $ret += $b1;
+            foreach($x in $function){
+                $x.setClass($this.name )
+                $header  = $x.getHeader()
+                $body = $x.getBody()
+                $ret += make_packet_entry -header $header -body $body
+            }
+
+            $ret+= make_packet_entry -header "-- End Pseudo class $($this.name)`n`n" -body "-- End Pseudo class $($this.name)`n`n"
+            return $ret
+    }
+    [string]getHeader(){
+        $ret="";
+        $Local_entries = $this.getEntries();
+        foreach($x in $Local_entries){
+            $ret += $x.getHeader()
+        }
+        return $ret
+    }
+    [string]getBody(){
+        $ret="";
+        $Local_entries = $this.getEntries();
+        foreach($x in $Local_entries){
+            $ret += $x.getBody()
+        }
+        return $ret
+
+    }
 }
 
 function v_class($name,$entries){
