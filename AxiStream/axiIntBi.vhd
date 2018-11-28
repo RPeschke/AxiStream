@@ -127,6 +127,8 @@ rx => axiIntBi_ToMaster_null);
 
  procedure AxiPullData(this : inout AxiRXTXMaster_axiIntBi; signal tMaster : in AxiToMaster_axiIntBi);
  procedure AxiPushData(this : inout AxiRXTXMaster_axiIntBi; signal fromMaster : out AxiFromMaster_axiIntBi);
+ procedure AxiPullData(this : inout AxiRXTXMaster_axiIntBi; signal tx_ready : in sl; signal RX_Data: in IntegerS_data_t; signal RX_DataValid: in sl; signal RX_DataLast: in sl);
+ procedure AxiPushData(this : inout AxiRXTXMaster_axiIntBi; signal RX_Ready : out sl; signal TX_Data : out integerM_data_t; signal TX_DataValid : out sl; signal TX_DataLast : out sl);
  function  txIsReady(this : in AxiRXTXMaster_axiIntBi) return boolean;
  procedure txSetData(this : inout AxiRXTXMaster_axiIntBi; data : in integerM_data_t);
  procedure txSetLast(this : inout AxiRXTXMaster_axiIntBi);
@@ -155,6 +157,8 @@ rx => axiIntBi_fromMaster_null);
 
  procedure AxiPullData(this : inout AxiRXTXSlave_axiIntBi; signal fMaster : in AxiFromMaster_axiIntBi);
  procedure AxiPushData(this : inout AxiRXTXSlave_axiIntBi; signal toMaster : out AxiToMaster_axiIntBi);
+ procedure AxiPullData(this : inout AxiRXTXSlave_axiIntBi; signal RX_Ready : in sl; signal TX_Data : in IntegerS_data_t; signal TXDataValid : in sl; signal TXDataLast : in sl);
+ procedure AxiPushData(this : inout AxiRXTXSlave_axiIntBi; signal TX_Ready : out sl; signal RX_Data : out integerM_data_t; signal RX_DataValid : out sl;  signal RX_DataLast : out sl);
  function  txIsReady(this : in AxiRXTXSlave_axiIntBi) return boolean;
  procedure txSetData(this : inout AxiRXTXSlave_axiIntBi; data : in IntegerS_data_t);
  procedure txSetLast(this : inout AxiRXTXSlave_axiIntBi);
@@ -166,12 +170,16 @@ rx => axiIntBi_fromMaster_null);
  function  rxGetData(this : in AxiRXTXSlave_axiIntBi) return integerM_data_t;
  procedure rxSetReady(this : inout AxiRXTXSlave_axiIntBi);
  function  rxGetPos(this : in AxiRXTXSlave_axiIntBi) return size_t;
+ function rxIsLast(this : in AxiRXTXSlave_axiIntBi) return boolean;
  -- End Pseudo class AxiRXTXSlave_axiIntBi
 
 end axiIntbi_p;
 
 
 package body axiIntbi_p is
+   function rxIsLast(this : in AxiRXTXSlave_axiIntBi) return boolean is begin
+     return this.rx.ctrl.DataLast = '1';
+   end function rxIsLast;
 procedure resetData(data : inout integerM_data_t) is begin 
 data := 0; 
 end procedure resetData; 
@@ -462,6 +470,21 @@ end procedure AxiPullData;
            
 end procedure AxiPushData; 
 
+ procedure AxiPullData(this : inout AxiRXTXMaster_axiIntBi; signal tx_ready : in sl; signal RX_Data: in IntegerS_data_t; signal RX_DataValid: in sl; signal RX_DataLast: in sl) is begin 
+
+            pullSender(this.tx, tx_ready);
+            pullReceiver(this.rx, RX_Data , RX_DataLast,  RX_DataValid);
+
+           
+end procedure AxiPullData; 
+
+ procedure AxiPushData(this : inout AxiRXTXMaster_axiIntBi; signal RX_Ready : out sl; signal TX_Data : out integerM_data_t; signal TX_DataValid : out sl; signal TX_DataLast : out sl) is begin 
+
+            pushSender(this.tx, TX_Data, TX_DataLast ,TX_DataValid );
+            pushReceiver(this.rx, RX_Ready);
+           
+end procedure AxiPushData; 
+
  function  txIsReady(this : in AxiRXTXMaster_axiIntBi) return boolean is begin 
 
              return IsReady(this.tx);
@@ -548,6 +571,21 @@ end procedure AxiPullData;
 
             pushSender(this.tx, toMaster.RX_Data ,toMaster.RX_ctrl.DataLast,toMaster.RX_ctrl.DataValid );
             pushReceiver(this.rx, toMaster.TX_Ready);
+           
+end procedure AxiPushData; 
+
+ procedure AxiPullData(this : inout AxiRXTXSlave_axiIntBi; signal RX_Ready : in sl; signal TX_Data : in IntegerS_data_t; signal TXDataValid : in sl; signal TXDataLast : in sl) is begin 
+
+            pullSender(this.tx, RX_Ready);
+            pullReceiver(this.rx, TX_Data , TXDataLast ,  TXDataValid);
+
+           
+end procedure AxiPullData; 
+
+ procedure AxiPushData(this : inout AxiRXTXSlave_axiIntBi; signal TX_Ready : out sl; signal RX_Data : out integerM_data_t; signal RX_DataValid : out sl;  signal RX_DataLast : out sl) is begin 
+
+            pushSender(this.tx, RX_Data , RX_DataLast, RX_DataValid);
+            pushReceiver(this.rx, TX_Ready);
            
 end procedure AxiPushData; 
 
