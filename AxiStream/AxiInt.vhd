@@ -117,8 +117,9 @@ end procedure reset;
             this.tx.Ready1 := this.tx.Ready0;   
             this.tx.Ready0 := this.tx.Ready;
   	        this.tx.ready :=tMaster.tx_ready;
-            reset(this.tx.Data);
-            AxiReset(this);
+            AxiTxIncrementPos(this);
+            
+            
           
 end procedure AxiPullData; 
 
@@ -126,6 +127,8 @@ end procedure AxiPullData;
 
             if txIsValid(this) and txIsDataReady(this) then 
               this.tx.position := this.tx.position + 1;
+              reset(this.tx.Data);
+              AxiReset(this);
               if txIsLast(this) then
                 this.tx.position := 0;
               end if;
@@ -144,7 +147,7 @@ end function txIsDataReady;
             fromMaster.TX_Data  <= this.tx.Data after 1 ns;
             fromMaster.TX_ctrl.DataLast <= this.tx.ctrl.DataLast after 1 ns;
             fromMaster.TX_ctrl.DataValid <= this.tx.ctrl.DataValid after 1 ns;
-            AxiTxIncrementPos(this);
+           -- AxiTxIncrementPos(this);
           
 end procedure AxiPushData; 
 
