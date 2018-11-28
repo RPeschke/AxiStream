@@ -9,17 +9,17 @@ library ieee;
 
   use work.axiIntbi_p.all;
 
-entity master_axi_bi is 
+entity e_slaveAxiBiStream is 
   port(
     clk : in sl;
     -- Outgoing response
-    fromMaster : out  AxiFromMaster_axiIntBi;
+    toMaster   : out AxiToMaster_axiIntBi;
     -- Incoming data
-    toMaster   : in AxiToMaster_axiIntBi
+    fromMaster : in  AxiFromMaster_axiIntBi
   );
-end master_axi_bi;
+end e_slaveAxiBiStream;
 
-architecture rtl of master_axi_bi is 
+architecture rtl of e_slaveAxiBiStream is 
 
 
 
@@ -27,25 +27,22 @@ architecture rtl of master_axi_bi is
 begin
   seq : process(clk) is
     variable RXTX : AxiRXTXMaster_axiIntBi :=AxiRXTXMaster_axiIntBi_null ;
-    variable index : integer := 0;
+
 
   begin
     if (rising_edge(clk)) then
- 
-      report "35";
-      AxiPullDataMaster(RXTX, toMaster);
-      report "37";
-      if not txIsValid(RXTX) then 
-        txSetData(RXTX, index);
-        
+      AxiPullData(RXTX, toMaster);
+
+      if txIsReady(RXTX) then 
+        txSetData(RXTX, txGetPos(RXTX));
+
         if txGetPos(RXTX) > 10 then 
           txSetLast(RXTX);
         end if;
       end if;
 
-      rxSetReady(RXTX);
-      index := index+1;
-      AxiPushDataMaster(RXTX, fromMaster);
+
+      AxiPushData(RXTX, fromMaster);
 
 
     end if;

@@ -41,6 +41,11 @@ class vc_class{
         $this.entries = $entries
     }
 
+    append($entry){
+        $this.entries +=$entry
+
+    }
+
     [System.Object[]]getEntries(){
             $ret=@()
             $ret+= make_packet_entry -header "`n`n-- Starting Pseudo class $($this.name)`n" -body "`n`n-- Starting Pseudo class $($this.name)`n"
@@ -83,25 +88,9 @@ class vc_class{
 
 function v_class($name,$entries){
 
-$ret=@()
-$ret+= make_packet_entry -header "`n`n-- Starting Pseudo class $name`n" -body "`n`n-- Starting Pseudo class $name`n"
-
-$member = $entries | where{$_.GetType().name -eq "vc_member"}
-$function = $entries | where{$_.GetType().name -ne "vc_member"}
-
-$b1 = v_record -Name $name -entries $member
-
-
-$ret += $b1;
-foreach($x in $function){
-    $x.setClass($name)
-    $header  = $x.getHeader()
-    $body = $x.getBody()
-    $ret += make_packet_entry -header $header -body $body
-}
-
-$ret+= make_packet_entry -header "-- End Pseudo class $name`n`n" -body "-- End Pseudo class $name`n`n"
+$ret = [vc_class]::new($name, $entries);
 return $ret
+
 
 }
 

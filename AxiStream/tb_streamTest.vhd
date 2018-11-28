@@ -28,14 +28,10 @@ begin
   csv :entity  work.csv_read_file generic map (FileName => "test2.txt", NUM_COL => 3) port map(clk => clk, Rows => data_stream);
   csv_out : entity  work.csv_write_file generic map (FileName => "test3.txt",HeaderLines=> "x1; x2; x3; x3") port map(clk => clk, Rows => data_stream);
   mBi : entity work.master_axi_bi port map(clk => clk, fromMaster => fromMaster, toMaster=>toMaster);
+  sBI : entity work.slave_AxiBi port map(clk =>clk , toMaster => toMaster , fromMaster => fromMaster);
+  
   usrClk_process :process
   begin
-    toMaster.TX_Ready <='1';
-    if fromMaster.TX_Data = 4 and toMaster.TX_Ready = '1' then 
-      toMaster.TX_Ready <='0';
-    else 
-      toMaster.TX_Ready <='1';  
-    end if;
     clk <= '0';
     wait for usrClk_period/2;
     clk <= '1';
