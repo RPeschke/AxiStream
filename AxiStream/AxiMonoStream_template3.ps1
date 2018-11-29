@@ -1,5 +1,10 @@
 ﻿
-function axiClass($name,$type){
+function axiClass($name,$type,$DoUse){
+    if($DoUse -eq $false){
+        $ret = make_packet_entry
+        return $ret
+    }
+
     $ret =  (v_class -name $name  -entries (
          (v_member -name "ctrl"     -type "AxiCtrl" ),
          (v_member -name "data"     -type "$type"),
@@ -104,127 +109,216 @@ function axiClass($name,$type){
     return $ret
 }
 
-function axiHandle($name, $txClassName,$RxClassName,$fromMasterName,$ToMasterName,$TxDataType,$RxDataType, [switch]$Slave){
 
-if($Slave){
-          $AxiPullData =(v_procedure -name AxiPullDataSlave -argumentList "signal fMaster : in $($fromMasterName)" -body "
-            pullSender(this.tx, fMaster.RX_Ready);
-            pullReceiver(this.rx, fMaster.TX_Data ,fMaster.TX_ctrl.DataLast,  fMaster.TX_ctrl.DataValid);
+function axiAddSenderTypes($AxiHandler,$TxDataType,$txClassName){
 
-          ")
-          $AxiPullDataExplicit =(v_procedure -name AxiPullDataSlaveEx -argumentList "signal RX_Ready : in sl; signal TX_Data : in $TxDataType; signal TXDataValid : in sl; signal TXDataLast : in sl" -body "
-            pullSender(this.tx, RX_Ready);
-            pullReceiver(this.rx, TX_Data , TXDataLast ,  TXDataValid);
+$AxiHandler.append((v_function -name txIsReady -returnType "boolean" -body  "
+             return IsReady(this.tx);
+         "))
 
-          ")
+$AxiHandler.append((v_procedure -name txSetData -argumentList "data : in $($TxDataType)" -body '
+            SetData(this.tx, data);
+         '))
+$AxiHandler.append((v_procedure -name txSetLast  -body '
+            SetLast(this.tx);
+         '))
 
-          $AxiPushData = (v_procedure -name   AxiPushDataSlave -argumentList "signal toMaster : out $($ToMasterName)" -body "
-            pushSender(this.tx, toMaster.RX_Data ,toMaster.RX_ctrl.DataLast,toMaster.RX_ctrl.DataValid );
-            pushReceiver(this.rx, toMaster.TX_Ready);
-          ")
-          $AxiPushDataExplicit = (v_procedure -name   AxiPushDataSlaveEX -argumentList "signal TX_Ready : out sl; signal RX_Data : out $RxDataType; signal RX_DataValid : out sl;  signal RX_DataLast : out sl" -body "
-            pushSender(this.tx, RX_Data , RX_DataLast, RX_DataValid);
-            pushReceiver(this.rx, TX_Ready);
-          ")
-}else {
 
-          $AxiPullData =(v_procedure -name AxiPullDataMaster -argumentList "signal tMaster : in $($ToMasterName)" -body "
-            pullSender(this.tx, tMaster.tx_ready);
-            pullReceiver(this.rx, tMaster.RX_Data ,tMaster.RX_ctrl.DataLast,  tMaster.RX_ctrl.DataValid);
+$AxiHandler.append((v_function -name txIsLast -returnType "boolean" -body "
+            return this.tx.ctrl.DataLast = '1';
+         "))
 
-          ")
+$AxiHandler.append((v_function -name txIsValid -returnType "boolean" -body "
+            return this.tx.ctrl.DataValid = '1';
+         "))
+$AxiHandler.append((v_function -name txGetData  -returnType "$($TxDataType)" -body "
+            return this.tx.Data;
+         "))
+$AxiHandler.append((v_function -name txGetPos  -returnType "size_t" -body "
+            return this.tx.position;
+         "))
 
-          $AxiPullDataExplicit =(v_procedure -name AxiPullDataMasterEx -argumentList "signal tx_ready : in sl; signal RX_Data: in $RxDataType; signal RX_DataValid: in sl; signal RX_DataLast: in sl" -body "
-            pullSender(this.tx, tx_ready);
-            pullReceiver(this.rx, RX_Data , RX_DataLast,  RX_DataValid);
+        $ret.append( (v_member -name "tx"     -type "$txClassName"))
+}
 
-          ")
+function axiAddReceiverTypes($AxiHandler,$RxDataType,$RxClassName){
+        $AxiHandler.append( (v_function -name rxIsValidAndReady -returnType "boolean" -body "
+            return IsValid(this.rx) and wasReady(this.rx);  
+         "))
 
-            $AxiPushData = (v_procedure -name   AxiPushDataMaster -argumentList "signal fromMaster : out $($fromMasterName)" -body "
-            pushSender(this.tx, fromMaster.TX_Data ,fromMaster.TX_ctrl.DataLast,fromMaster.TX_ctrl.DataValid );
-            pushReceiver(this.rx, fromMaster.RX_Ready);
-          ")
-          $AxiPushDataExplicit = (v_procedure -name   AxiPushDataMasterEx -argumentList "signal RX_Ready : out sl; signal TX_Data : out $TxDataType; signal TX_DataValid : out sl; signal TX_DataLast : out sl" -body "
-            pushSender(this.tx, TX_Data, TX_DataLast ,TX_DataValid );
-            pushReceiver(this.rx, RX_Ready);
-          ")
+       $AxiHandler.append(   (v_function -name rxGetData  -returnType "$($RxDataType)" -body '
+            if not rxIsValidAndReady(this) then 
+              report "Error data not set";
+            end if;
+            return this.rx.data;
+         '))
+
+         $AxiHandler.append( (v_procedure -name rxSetReady  -body "
+            this.rx.Ready := '1';
+         "))
+
+         $AxiHandler.append( (v_function -name rxGetPos  -returnType "size_t" -body "
+            return this.rx.position;
+         "))
+
+         $AxiHandler.append( (v_function -name rxIsLast  -returnType "boolean" -body "
+            return this.rx.ctrl.DataLast = '1';
+         "))
+
+         
+         $AxiHandler.append( (v_member -name "rx"     -type "$RxClassName"))
+
+
 }
 
 
-$ret = (v_class -name "$name" -entries (
-         (v_member -name "tx"     -type "$txClassName"),
-         (v_member -name "rx"     -type "$RxClassName"),
-         
-         $AxiPullData,
-         $AxiPushData,
-         $AxiPullDataExplicit,
-         $AxiPushDataExplicit,
+function axiHandle($name, $txClassName,$RxClassName,$fromMasterName,$ToMasterName,$TxDataType,$RxDataType, [switch]$Slave,$mono){
+
+$ret = (v_class -name "$name" )
 
 
-         (v_function -name txIsReady -returnType "boolean" -body  "
-             return IsReady(this.tx);
-         "),
+if($Slave){
+           axiAddReceiverTypes -AxiHandler $ret -RxDataType $RxDataType -RxClassName $RxClassName
+          if($mono){
+             
+              
+            
 
-         (v_procedure -name txSetData -argumentList "data : in $($TxDataType)" -body '
-            SetData(this.tx, data);
-         '),
-         (v_procedure -name txSetLast  -body '
-            SetLast(this.tx);
-         '),
-         (v_function -name txIsLast -returnType "boolean" -body "
-            return this.tx.ctrl.DataLast = '1';
-         "),
-         (v_function -name txIsValid -returnType "boolean" -body "
-            return this.tx.ctrl.DataValid = '1';
-         "),
-         (v_function -name txGetData  -returnType "$($TxDataType)" -body "
-            return this.tx.Data;
-         "),
-         (v_function -name txGetPos  -returnType "size_t" -body "
-            return this.tx.position;
-         "),
-         (v_function -name rxIsValidAndReady -returnType "boolean" -body "
-            return IsValid(this.rx) and wasReady(this.rx);  
-         "),
-         (v_function -name rxGetData  -returnType "$($RxDataType)" -body '
-            if not rxIsValidAndReady(this) then 
-              report "Error data already set";
-            end if;
-            return this.rx.data;
-         '),
-         (v_procedure -name rxSetReady  -body "
-            this.rx.Ready := '1';
-         "),
-         (v_function -name rxGetPos  -returnType "size_t" -body "
-            return this.rx.position;
-         "),
-         (v_function -name rxIsLast  -returnType "boolean" -body "
-            return this.rx.ctrl.DataLast = '1';
-         ")
-         
-        )
-       )
+              $ret.append((v_procedure -name AxiPullDataSlave -argumentList "signal fMaster : in $($fromMasterName)" -body "
+                pullReceiver(this.rx, fMaster.TX_Data ,fMaster.TX_ctrl.DataLast,  fMaster.TX_ctrl.DataValid);
+
+              "))
+              $ret.append((v_procedure -name AxiPullDataSlaveEx -argumentList "signal TX_Data : in $TxDataType; signal TXDataValid : in sl; signal TXDataLast : in sl" -body "
+                
+                pullReceiver(this.rx, TX_Data , TXDataLast ,  TXDataValid);
+
+              "))
+
+              $ret.append((v_procedure -name   AxiPushDataSlave -argumentList "signal toMaster : out $($ToMasterName)" -body "
+                pushReceiver(this.rx, toMaster.TX_Ready);
+              "))
+
+              $ret.append((v_procedure -name   AxiPushDataSlaveEX -argumentList "signal TX_Ready : out sl" -body "
+                
+                pushReceiver(this.rx, TX_Ready);
+              "))
+
+
+          }else {
+             
+           
+
+              $ret.append((v_procedure -name AxiPullDataSlave -argumentList "signal fMaster : in $($fromMasterName)" -body "
+                pullSender(this.tx, fMaster.RX_Ready);
+                pullReceiver(this.rx, fMaster.TX_Data ,fMaster.TX_ctrl.DataLast,  fMaster.TX_ctrl.DataValid);
+
+              "))
+              $ret.append((v_procedure -name AxiPullDataSlaveEx -argumentList "signal RX_Ready : in sl; signal TX_Data : in $TxDataType; signal TXDataValid : in sl; signal TXDataLast : in sl" -body "
+                pullSender(this.tx, RX_Ready);
+                pullReceiver(this.rx, TX_Data , TXDataLast ,  TXDataValid);
+
+              "))
+
+              $ret.append((v_procedure -name   AxiPushDataSlave -argumentList "signal toMaster : out $($ToMasterName)" -body "
+                pushSender(this.tx, toMaster.RX_Data ,toMaster.RX_ctrl.DataLast,toMaster.RX_ctrl.DataValid );
+                pushReceiver(this.rx, toMaster.TX_Ready);
+              "))
+              $ret.append((v_procedure -name   AxiPushDataSlaveEX -argumentList "signal TX_Ready : out sl; signal RX_Data : out $RxDataType; signal RX_DataValid : out sl;  signal RX_DataLast : out sl" -body "
+                pushSender(this.tx, RX_Data , RX_DataLast, RX_DataValid);
+                pushReceiver(this.rx, TX_Ready);
+              "))
+              axiAddSenderTypes -AxiHandler $ret -TxDataType $TxDataType -txClassName $txClassName
+          }
+}else {
+          axiAddSenderTypes -AxiHandler $ret -TxDataType $TxDataType -txClassName $txClassName
+
+          if($mono){
+    
+              
+              
+              
+
+              $ret.append((v_procedure -name AxiPullDataMaster -argumentList "signal tMaster : in $($ToMasterName)" -body "
+                pullSender(this.tx, tMaster.tx_ready);
+              "))
+
+              $ret.append((v_procedure -name AxiPullDataMasterEx -argumentList "signal tx_ready : in sl" -body "
+                pullSender(this.tx, tx_ready);
+              "))
+
+              $ret.append((v_procedure -name   AxiPushDataMaster -argumentList "signal fromMaster : out $($fromMasterName)" -body "
+                pushSender(this.tx, fromMaster.TX_Data ,fromMaster.TX_ctrl.DataLast,fromMaster.TX_ctrl.DataValid );
+                
+              "))
+              $ret.append((v_procedure -name   AxiPushDataMasterEx -argumentList "signal TX_Data : out $TxDataType; signal TX_DataValid : out sl; signal TX_DataLast : out sl" -body "
+                pushSender(this.tx, TX_Data, TX_DataLast ,TX_DataValid );
+                
+              "))
+
+
+          }else {
+              axiAddReceiverTypes -AxiHandler $ret -RxDataType $RxDataType -RxClassName $RxClassName
+
+              
+              
+              $ret.append((v_procedure -name AxiPullDataMaster -argumentList "signal tMaster : in $($ToMasterName)" -body "
+                pullSender(this.tx, tMaster.tx_ready);
+                pullReceiver(this.rx, tMaster.RX_Data ,tMaster.RX_ctrl.DataLast,  tMaster.RX_ctrl.DataValid);
+
+              "))
+
+              $ret.append((v_procedure -name AxiPullDataMasterEx -argumentList "signal tx_ready : in sl; signal RX_Data: in $RxDataType; signal RX_DataValid: in sl; signal RX_DataLast: in sl" -body "
+                pullSender(this.tx, tx_ready);
+                pullReceiver(this.rx, RX_Data , RX_DataLast,  RX_DataValid);
+
+              "))
+
+                $ret.append((v_procedure -name   AxiPushDataMaster -argumentList "signal fromMaster : out $($fromMasterName)" -body "
+                pushSender(this.tx, fromMaster.TX_Data ,fromMaster.TX_ctrl.DataLast,fromMaster.TX_ctrl.DataValid );
+                pushReceiver(this.rx, fromMaster.RX_Ready);
+              "))
+              $ret.append((v_procedure -name   AxiPushDataMasterEx -argumentList "signal RX_Ready : out sl; signal TX_Data : out $TxDataType; signal TX_DataValid : out sl; signal TX_DataLast : out sl" -body "
+                pushSender(this.tx, TX_Data, TX_DataLast ,TX_DataValid );
+                pushReceiver(this.rx, RX_Ready);
+              "))
+
+          }
+
+}
+
+
 
        return $ret
 }
 
 
-function axistream_BiDirectional($axiName,$packetName,$DataTypeFromMaster,$dataZeroFromMaster,$DataTypeToMaster,$dataZeroToMaster){
+function axistream_BiDirectional($axiName,$packetName,$DataTypeFromMaster,$dataZeroFromMaster,$DataTypeToMaster,$dataZeroToMaster,[switch]$mono){
+
+if($mono){
+$mono = $true
+}
+else {
+$mono =$false
+}
+$twoDataTypes = $true
         if($DataTypeToMaster -eq $null){
 
             $DataTypeToMaster = $DataTypeFromMaster
             $dataZeroToMaster = $DataTypeFromMaster
+
            
 
         }
         $dataTypeNameFromMaster="$($DataTypeFromMaster)_data_t"
         $dataTypeNameToMaster="$($DataTypeToMaster)_data_t"
 
-        if($DataTypeToMaster -eq  $DataTypeFromMaster){
+        if( ($DataTypeToMaster -eq  $DataTypeFromMaster) -or $mono){
          $fromMasterSubtype = v_subtype -name  $dataTypeNameFromMaster -type $DataTypeFromMaster -default $dataZeroFromMaster
          $fromMasterSubtype_reset =   v_procedure -name resetData -argumentList "data : inout $($dataTypeNameFromMaster)" -body "data := $dataZeroFromMaster;"
          $toMasterSubtype = make_packet_entry
          $toMasterSubtype_reset =   make_packet_entry
+         
+         $twoDataTypes = $false
 
         }else {
          $fromMasterSubtype = v_subtype -name  $dataTypeNameFromMaster -type $DataTypeFromMaster -default $dataZeroFromMaster
@@ -238,9 +332,16 @@ function axistream_BiDirectional($axiName,$packetName,$DataTypeFromMaster,$dataZ
         $slaveRecName = "AxiRXTXSlave_$($axiName)"
         $ToMasterName = "AxiToMaster_$($axiName)"
         $fromMasterName = "AxiFromMaster_$($axiName)"
-        $axifromMaster =  "$($axiName)_fromMaster"
-        $axitoMaster = "$($axiName)_ToMaster"
 
+
+        if($twoDataTypes -eq $true) {
+            $axitoMaster = "$($axiName)_ToMaster"
+            $axifromMaster =  "$($axiName)_fromMaster"
+        }else{
+                       
+            $axifromMaster =  "$($axiName)_impl"
+            $axitoMaster =  $axifromMaster 
+        }
 
 $r = "library IEEE;
   use IEEE.STD_LOGIC_1164.all;
@@ -263,22 +364,22 @@ $r = "library IEEE;
         
         (v_record -name $ToMasterName -entries (
           (v_member -name "TX_Ready" -type "AxiDataReady_t"),
-          (v_member -name "RX_ctrl" -type "AxiCtrl"),
-          (v_member -name "RX_Data" -type "$dataTypeNameToMaster")
+          (v_member -name "RX_ctrl" -type "AxiCtrl"  -DoUse ($mono -eq $false)),
+          (v_member -name "RX_Data" -type "$dataTypeNameToMaster" -DoUse ($mono -eq $false))
         )),
 
         (v_record -name $fromMasterName -entries (
           (v_member -name "TX_ctrl" -type "AxiCtrl"),
           (v_member -name "TX_Data" -type "$dataTypeNameFromMaster"),
-          (v_member -name "RX_Ready" -type "AxiDataReady_t")
+          (v_member -name "RX_Ready" -type "AxiDataReady_t" -DoUse ($mono -eq $false))
         )),
 
 
-        (axiClass -name $axifromMaster -type $dataTypeNameFromMaster),
-        (axiClass -name $axitoMaster -type $dataTypeNameToMaster),
+        (axiClass -name $axifromMaster -type $dataTypeNameFromMaster -DoUse $true),
+        (axiClass -name $axitoMaster -type $dataTypeNameToMaster -DoUse  ($mono -eq $false  -and $twoDataTypes) ),
  
-        (axiHandle -name $masterRecName -txClassName $axifromMaster -fromMasterName $fromMasterName -TxDataType $dataTypeNameFromMaster -RxClassName $axitoMaster -ToMasterName $ToMasterName -RxDataType $dataTypeNameToMaster),
-        (axiHandle -name $slaveRecName -txClassName $axitoMaster -fromMasterName $fromMasterName -TxDataType $dataTypeNameToMaster -RxClassName $axifromMaster -ToMasterName $ToMasterName -RxDataType $dataTypeNameFromMaster -Slave)
+        (axiHandle -name $masterRecName -txClassName $axifromMaster -fromMasterName $fromMasterName -TxDataType $dataTypeNameFromMaster -RxClassName $axitoMaster -ToMasterName $ToMasterName -RxDataType $dataTypeNameToMaster -mono $mono),
+        (axiHandle -name $slaveRecName -txClassName $axitoMaster -fromMasterName $fromMasterName -TxDataType $dataTypeNameToMaster -RxClassName $axifromMaster -ToMasterName $ToMasterName -RxDataType $dataTypeNameFromMaster -Slave -mono $mono)
 
 
 
