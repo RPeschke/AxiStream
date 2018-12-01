@@ -7,15 +7,15 @@ library ieee;
   use work.UtilityPkg.all;
   use STD.textio.all;
 
-  use work.axiIntbi_p.all;
+  use work.axi_int_bi.all;
 
 entity master_axi_bi is 
   port(
     clk : in sl;
     -- Outgoing response
-    fromMaster : out  AxiFromMaster_axiIntBi;
+    fromMaster : out  axi_m2s;
     -- Incoming data
-    toMaster   : in AxiToMaster_axiIntBi
+    toMaster   : in axi_s2m
   );
 end master_axi_bi;
 
@@ -26,26 +26,26 @@ architecture rtl of master_axi_bi is
 
 begin
   seq : process(clk) is
-    variable RXTX : AxiRXTXMaster_axiIntBi :=AxiRXTXMaster_axiIntBi_null ;
+    variable RXTX : axi_master :=axi_master_null ;
     variable index : integer := 0;
 
   begin
     if (rising_edge(clk)) then
  
       report "35";
-      AxiPullDataMaster(RXTX, toMaster);
+      pull_axi_master(RXTX, toMaster);
       report "37";
-      if not txIsValid(RXTX) then 
-        txSetData(RXTX, index);
+      if ready2Send(RXTX) then 
+        sendData(RXTX, index);
         
-        if txGetPos(RXTX) > 10 then 
-          txSetLast(RXTX);
+        if sendPosition(RXTX) > 10 then 
+          		sendLast(RXTX);
         end if;
       end if;
 
-      rxSetReady(RXTX);
+		setReady(RXTX);
       index := index+1;
-      AxiPushDataMaster(RXTX, fromMaster);
+      push_axi_master(RXTX, fromMaster);
 
 
     end if;

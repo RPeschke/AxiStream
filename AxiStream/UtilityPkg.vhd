@@ -20,7 +20,10 @@ package UtilityPkg is
    subtype slv is std_logic_vector;
    subtype size_t is integer ;
    constant size_t_null : size_t := 0;
-   
+   constant integer_null : integer := 0;
+	 constant  sl_null: sl := '0';
+	 
+	 
    subtype  integerM is integer;
    subtype  integerS is integer;
    subtype  DWORD is slv(31 downto 0);

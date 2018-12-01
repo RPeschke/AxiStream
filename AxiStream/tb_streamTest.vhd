@@ -3,7 +3,7 @@ library ieee;
   use work.axiStreamHelper.all;
   use work.AxiMonoStream.all;
   use work.UtilityPkg.all;
-  use work.axiIntbi_p.all;
+  use work.axi_int_bi.all;
 
 entity tb_streamTest is
 end;
@@ -17,8 +17,8 @@ signal fMaster : AxiMonoFromMaster_t := c_AxiMonoFromMaster_t;
 signal tMaster : AxiMonoToMaster_t := c_AxiMonoToMaster_t;
 signal clk : sl;
 signal data_stream : t_integer_array(3 downto 0);
-signal fromMaster : AxiFromMaster_axiIntBi := AxiFromMaster_axiIntBi_null;
-signal toMaster   :  AxiToMaster_axiIntBi := AxiToMaster_axiIntBi_null;
+signal fromMaster : axi_m2s := axi_m2s_null;
+signal toMaster   :  axi_s2m := axi_s2m_null;
 constant usrClk_period : time := 10 ns;
 begin
 

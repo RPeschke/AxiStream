@@ -137,3 +137,62 @@ class vhd_signal{
     }
 }
 
+enum UseMasterSlave{
+DontUse
+Master
+Slave
+MasterSlave
+
+}
+
+enum InOutType {
+
+In
+Out
+Internal
+InternalMaster
+InternalSlave
+
+}
+
+
+function getConstants([bool]$ReversInOut){
+
+
+
+
+
+    if($ReversInOut){
+
+        $ret = @{
+                In                 =  [InOutType]::Out
+                Out                =  [InOutType]::In
+                Internal           =  [InOutType]::Internal
+                InternalMaster     =  [InOutType]::InternalSlave
+                InternalSlave      =  [InOutType]::InternalMaster
+                DontUse            =  [UseMasterSlave]::DontUse
+                Master             =  [UseMasterSlave]::Slave
+                Slave              =  [UseMasterSlave]::Master
+                BothMasterSlave    =  [UseMasterSlave]::MasterSlave
+            }
+            return $ret
+    }else{
+
+        $ret = @{
+                In                 =  [InOutType]::In
+                Out                =  [InOutType]::Out
+                Internal           =  [InOutType]::Internal
+                InternalMaster     =  [InOutType]::InternalMaster
+                InternalSlave      =  [InOutType]::InternalSlave
+                DontUse            =  [UseMasterSlave]::DontUse
+                Master             =  [UseMasterSlave]::Master
+                Slave              =  [UseMasterSlave]::Slave
+                BothMasterSlave    =  [UseMasterSlave]::MasterSlave
+            }
+
+        return $ret
+    }
+
+
+
+}

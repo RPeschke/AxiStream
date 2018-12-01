@@ -1,15 +1,42 @@
-﻿class vc_procedure{
+﻿enum UseMasterSlave{
+DontUse
+Master
+Slave
+MasterSlave
+
+}
+
+function v_procedure($name,$argumentList,$body,[switch]$const,[UseMasterSlave]$masterSlave){
+if($masterSlave -eq $null){
+    $masterSlave = [UseMasterSlave]::MasterSlave
+}
+    $ret = [vc_procedure]::new($name,$argumentList,$body,$masterSlave)
+    if($const){
+        $ret.Modifier = "in"
+    }
+    return $ret
+
+}
+
+
+
+class vc_procedure{
     [string]$name
     [string]$argumentList
     [string]$body
     [string]$ClassName
     [string]$Modifier
+    [UseMasterSlave]$masterSlave
 
-    vc_procedure($name,$argumentList,$body){
+
+    vc_procedure($name,$argumentList,$body,$masterSlave){
         $this.argumentList=$argumentList
         $this.name=$name
         $this.body=$body
         $this.Modifier="inout"
+        $this.masterSlave=$masterSlave
+        
+
     }
     [string]getHeader(){
         $arglist=$this.getArgList()
@@ -41,16 +68,6 @@
         $classArgs = $a -join "; "
         return $classArgs
     }
-
-}
-
-function v_procedure($name,$argumentList,$body,[switch]$const){
-
-    $ret = [vc_procedure]::new($name,$argumentList,$body)
-    if($const){
-        $ret.Modifier = "in"
-    }
-    return $ret
 
 }
 

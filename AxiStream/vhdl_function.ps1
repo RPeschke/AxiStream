@@ -1,6 +1,19 @@
-﻿function v_function($name,$argumentList,$returnType,$body){
+﻿enum UseMasterSlave{
+DontUse
+Master
+Slave
+MasterSlave
 
-$ret = [vc_function]::new($name, $argumentList,$returnType,$body)
+}
+
+function v_function($name,$argumentList,$returnType,$body,[UseMasterSlave]$masterSlave){
+
+
+if($masterSlave -eq $null){
+    $masterSlave = [UseMasterSlave]::MasterSlave
+}
+
+$ret = [vc_function]::new($name, $argumentList,$returnType,$body,$masterSlave)
 return $ret
 
 }
@@ -13,13 +26,16 @@ class vc_function{
     [string]$ClassName
     
     [string]$Modifier
+    [UseMasterSlave]$masterSlave
 
-    vc_function($name,$argumentList,$returnType,$body){
+    vc_function($name,$argumentList,$returnType,$body,$masterSlave){
         $this.name=$name
         $this.argumentList=$argumentList
         $this.returnType=$returnType
         $this.body=$body
         $this.Modifier=" "
+        $this.masterSlave=$masterSlave
+
     }
     setClass($className){
         
