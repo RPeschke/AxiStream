@@ -2,33 +2,61 @@
     [string]$name
     [string]$type
     [string]$default
-    vc_member($name,$type, $default){
+    [bool]$doUse
+    [string]$inout
+    vc_member($name,$type, $default,$inout ,$doUse){
         $this.name = $name
         $this.type = $type
         $this.default = $default
+        $this.doUse=$doUse
+        $this.inout = $inout
     }
 
     [string]getEntry(){
+        if($this.doUse -eq $false){
+          return "";
+        }
         $ret ="$($this.name) : $($this.type); `n"
         return $ret
     }
 
     [string]getDefault(){
+        if($this.doUse -eq $false){
+            return "";
+        }
+
         $ret =""
+
         if($this.default.Length -gt 0){
             $ret = "$($this.name) => $($this.default),`n" 
         }
         return $ret
     }
 }
-function v_member($name,$type,$default,[switch]$NoDefault){
+function v_member($name,$type,$default,[switch]$NoDefault,$DoUse,[switch]$in,[Switch]$out,[switch]$inout,[switch]$internal){
+if($DoUse -eq $null){
+    $DoUse = $true
+}
+
 if($default -eq $null){
     $default = v_record_null -Name $type
 }
 if($NoDefault){
     $default =""
 }
-return [vc_member]::new($name,$type,$default)
+if($inout){
+$inout_str = "in"
+}
+if($in){
+$inout_str = "in"
+}
+if($out){
+$inout_str = "out"
+}
+if($internal){
+$inout_str = "internal"
+}
+return [vc_member]::new($name,$type,$default,$inout_str,$DoUse)
 }
 
 class vc_class{
