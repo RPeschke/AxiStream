@@ -3,11 +3,17 @@ function axiClass($prefixName,$type,$classIn, $DoUse, [switch]$ReversInOut){
 $const = getConstants -ReversInOut $ReversInOut
 
 if($ReversInOut){
- $classIn.MasterBeforePull ="this.$($prefixName)_Ready0 := this.$($prefixName)_Ready;"
+ $classIn.MasterBeforePull ="
+this.$($prefixName)_Ready0 := this.$($prefixName)_Ready;
+this.$($prefixName)_Ready := '0';
+"
  $classIn.SlaveAfterPull  ="$($prefixName)_IncrementPosSender(this);"
  #$classIn.MasterAfterPull = "$($prefixName)_IncrementPosReceiver(this);"
 }else{
- $classIn.SlaveBeforePull="this.$($prefixName)_Ready0 := this.$($prefixName)_Ready;"
+ $classIn.SlaveBeforePull="
+this.$($prefixName)_Ready0 := this.$($prefixName)_Ready;
+this.$($prefixName)_Ready := '0';
+"
  $classIn.MasterAfterPull  ="$($prefixName)_IncrementPosSender(this);"
  #$classIn.SlaveAfterPull = "$($prefixName)_IncrementPosReceiver(this);"
 }
@@ -71,11 +77,11 @@ if($ReversInOut){
           "))
 
     $classIn.append((v_function -name HasReceivedData -returnType boolean -masterSlave $const.Slave -body "
-            return this.$($prefixName)_DataValid = '0' and this.$($prefixName)_Ready0 ='1';
+            return this.$($prefixName)_DataValid = '1' and this.$($prefixName)_Ready0 ='1';
           "))
 
     $classIn.append((v_function -name HasReceivedLast -returnType boolean -masterSlave $const.Slave -body "
-            return this.$($prefixName)_DataLast = '0';
+            return this.$($prefixName)_DataLast = '1' and this.$($prefixName)_DataValid = '1' and this.$($prefixName)_Ready0 ='1';
           "))
 
     $classIn.append((v_function -name ReceivedData -returnType $type -masterSlave $const.Slave -body "
