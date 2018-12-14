@@ -14,12 +14,14 @@ entity csv_read_file is
     FileName : string := "read_file_ex.txt";
     NUM_COL : integer := 3;
     HeaderLines :integer :=1;
-    Delay : time := 2 ns 
+    Delay : time := 2 ns ;
+    t_step : time := 1 ns 
   );
   port(
     clk : in sl;
 
     Rows : out t_integer_array(NUM_COL downto 0) := (others => 0);
+    
     Index : out integer := 0
   ); 
 end csv_read_file;
@@ -27,30 +29,42 @@ end csv_read_file;
 architecture Behavioral of csv_read_file is
 
 begin
-  seq : process(clk) is
+  seq : process  is
     file input_buf : text;  -- text is keyword
 
     variable csv : csv_file;
-
+    variable isEnd : boolean := False;
+    variable  timeCounter: integer := 0;
+    variable time_hasPassed: boolean := false;
   begin
-    if rising_edge(clk) then 
+ 
+    if not csv_isOpen(csv) then
+      csv_openFile(csv,input_buf, FileName, HeaderLines, NUM_COL);
+    end if;
     
-      
-      if not csv_isOpen(csv) then
-        csv_openFile(csv,input_buf, FileName, HeaderLines, NUM_COL);
-      end if;
-
+    while (not isEnd) loop
       if not endfile(input_buf) then 
         csv_readLine(csv,input_buf);
+        time_hasPassed := false;
       else 
         csv_close(csv,input_buf);
+        isEnd := True;
       end if;
 
-      for i in 0 to NUM_COL loop
-        Rows(i) <= csv_get(csv, i) after Delay ;
+      while(not time_hasPassed) loop
+        wait for t_step;
+        timeCounter := timeCounter + 1;
+        if timeCounter > csv_get(csv, 0)  then
+          time_hasPassed := true;
+        end if;
       end loop;
-      Index <= csv_getIndex(csv) after Delay ;
-    end if;
+      
+      for i in 0 to NUM_COL loop
+        Rows(i) <= csv_get(csv, i)  ;
+      end loop;
+      Index <= csv_getIndex(csv);
+
+    end loop;     
   end process seq;
 end Behavioral;
 
