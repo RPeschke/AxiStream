@@ -42,7 +42,7 @@ begin
       csv_openFile(csv,input_buf, FileName, HeaderLines, NUM_COL);
     end if;
     
-    while (not isEnd) loop
+    while (not isEnd and timeCounter <100) loop
       if not endfile(input_buf) then 
         csv_readLine(csv,input_buf);
         time_hasPassed := false;

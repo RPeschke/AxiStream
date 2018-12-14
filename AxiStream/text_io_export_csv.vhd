@@ -7,7 +7,7 @@ package text_io_export_csv is
 
   constant NUM_COL : integer := 30;
   constant Integer_width : integer := 5;
-
+  constant time_width : integer := 30;
   type csv_exp_file is record
     data_vecotor_buffer  : t_integer_array(NUM_COL downto 0);
     lineBuffer : line ;
@@ -30,6 +30,7 @@ package body text_io_export_csv is
     --      csv_reset(csv);
     csv.columns := NumOfcolumns;
     file_open(F, FileName,  write_mode); 
+    WRITE(csv.lineBuffer,"Time ; ", right, time_width);
     WRITE(csv.lineBuffer,Header,right, Integer_width);
     writeline(F, csv.lineBuffer);
     csv.IsOpen := '1';
@@ -57,10 +58,19 @@ package body text_io_export_csv is
     csv.data_vecotor_buffer(index) := data;
 
   end csv_set;
-  procedure csv_write(csv : inout csv_exp_file ; file F: Text) is begin
+  procedure csv_write(csv : inout csv_exp_file ; file F: Text) is
+    variable sim_time_str_v : string(1 to time_width);  -- 30 chars should be enough
+    variable sim_time_len_v : natural;
+  begin
     for i in 0 to csv.columns loop
       if i > 0 then 
-        write(csv.lineBuffer,  "; " , right, 2);        
+        write(csv.lineBuffer,  "; " , right, 2); 
+      else 
+        sim_time_len_v := time'image(now)'length;
+        sim_time_str_v := (others => ' ');
+        sim_time_str_v(1 to sim_time_len_v) := time'image(now);
+         write(csv.lineBuffer,  sim_time_str_v , right, 2); 
+         write(csv.lineBuffer,  "; " , right, 2); 
       end if;
       write(csv.lineBuffer,  csv.data_vecotor_buffer(i) , right, Integer_width);
     end loop;
