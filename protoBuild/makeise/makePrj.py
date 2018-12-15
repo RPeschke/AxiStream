@@ -33,7 +33,7 @@ def HandleSimulation(config,section,path):
         f.write('if [ "$1" != "" ]; then\ncp $1 '+ inFile +'\nfi\n')
         f.write(RunScript+'\n')
         f.write('if [ "$1" != "" ]; then\nrm -f '+ inFile +'\nfi\n')
-        f.write('if [ "$2" != "" ]; then\ncp  ' +OutputDataFile +' $2 \nfi\n')
+        f.write('if [ "$2" != "" ]; then\necho "<======diff========>"\ndiff  ' +OutputDataFile +' $2 \necho "<=======end diff=====>"\nfi\n')
     onerror=config.get(section,'Onerror')
     Runtime =config.get(section,'Runtime')
     tclbatchScript = "onerror "+onerror +"\nwave add /\nrun "+Runtime + ";\nquit -f;"
@@ -46,6 +46,9 @@ def HandleSimulation(config,section,path):
             if opValue == None:
                 f.write('vhdl work "' + op+ '"\n')
 
+def handleImplement(config,section,path):
+    'xst -intstyle ise -filter "/home/ise/xilinx_share2/GitHub/AxiStream/build/iseconfig/filter.filter" -ifn "/home/ise/xilinx_share2/GitHub/AxiStream/build/tb_streamTest.xst" -ofn "/home/ise/xilinx_share2/GitHub/AxiStream/build/tb_streamTest.syr"'
+    pass
 
 def main(args = None):
     if args == None:
@@ -65,11 +68,13 @@ def main(args = None):
     sections = config.sections()
     
     for s in sections:
-        if "Simulation" not in s: 
-            continue
-        print(s)
+        if "Simulation" in s: 
+            print(s)
+            HandleSimulation(config,s,Path)
+        elif "Implement" in s: 
+            pass
 
-        HandleSimulation(config,s,Path)
+
     
 
 if (__name__ == "__main__"):

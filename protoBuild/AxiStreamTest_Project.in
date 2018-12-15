@@ -90,6 +90,11 @@ OutputDataFile="../test3.txt"
 ../AxiStream/e_csv_read_file.vhd
 ../AxiStream/csv_write_file.vhd
 ../AxiStream/tb_streamTest.vhd
+
+[Implement 1]
+Name="tb_streamTest2"
+TopLevelModule="work.tb_streamTest"
+
 [CoreGen Files]
 #Add XCO files. You can just list the filename, OR have the CoreGen files be
 #auto-generated as well by specifying the section name
