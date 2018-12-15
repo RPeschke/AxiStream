@@ -24,7 +24,7 @@ class vc_function{
     [string]$returnType
     [string]$body
     [string]$ClassName
-    
+    [string]$SignalClass
     [string]$Modifier
     [UseMasterSlave]$masterSlave
 
@@ -35,12 +35,15 @@ class vc_function{
         $this.body=$body
         $this.Modifier=" "
         $this.masterSlave=$masterSlave
-
+        $this.SignalClass=""
     }
     setClass($className){
         
         $this.ClassName = $className
         
+    }
+    setSignalClass($signal){
+     $this.SignalClass = $signal
     }
     setModifier($Modifier){
         $this.Modifier=$Modifier
@@ -49,7 +52,7 @@ class vc_function{
 
         if($this.ClassName){
            
-            $classArgs="this : $($this.Modifier) $($this.ClassName)"
+            $classArgs="$($this.SignalClass) this : $($this.Modifier) $($this.ClassName)"
         }else {
             $classArgs=""
         }

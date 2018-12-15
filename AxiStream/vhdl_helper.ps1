@@ -62,6 +62,10 @@ function v_record($Name,$entries){
 
 
 function v_record_null($Name){
+
+if($Name -like "*std_logic_vector*"){
+    return "(others => '0')"
+}
 return "$($Name)_null"
 
 }
@@ -89,28 +93,7 @@ return $ret
 
 
 
-#class vhdl_function{
-#[string]$name;
-#[string]$returnType;
-#[string]$argumentList;
-#[string]$body;
-#hdl_function($name,$returnType,$argumentList,$body){
-#$this.name=$name;
-#$this.returnType=$returnType;
-#$this.argumentList=$argumentList;
-#$this.body=$body;
-#}
-#[string]Declaration(){
-#$ret = "function $($this.name)($($this.argumentList)) return $($this.returnType);";
-#return $ret;
-#}
-#[string]Definition(){
-#$ret = "function $($this.name)($($this.argumentList)) return $($this.returnType) is begin `n";
-#$ret += "$($this.body) `n";
-#$ret += "  end function $($this.name); `n";
-#return $ret;
-#}
-#}
+
 
 class vhd_signal{
 

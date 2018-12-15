@@ -9,7 +9,12 @@ InternalSlave
 }
 
 
-function v_member($name,$type,$default,[switch]$NoDefault,$DoUse,[InOutType]$InOut){
+function v_member($name,$type,$default,[switch]$NoDefault,$DoUse,$InOut){
+
+
+if($InOut -eq $null){
+    $InOut = [InOutType]::Internal
+}
 if($DoUse -eq $null){
     $DoUse = $true
 }
@@ -83,6 +88,9 @@ class vc_class{
 
 [string]$M2S_recName;
 [string]$S2M_recName;
+[string]$Trans_recName;
+
+[string]$signalClass;
 
     vc_class($name,$entries){
         $this.name = $name
@@ -91,6 +99,8 @@ class vc_class{
         $this.SlaveRecName = "$($name)_slave"
         $this.M2S_recName = "$($name)_m2s"
         $this.S2M_recName = "$($name)_s2m"
+        $this.Trans_recName = "$($name)_T"
+
     }
 
     append($entry){
@@ -105,12 +115,17 @@ class vc_class{
             $member = $this.entries | where{$_.GetType().name -eq "vc_member"} |where{$_.InOut -ne 'InternalSlave' }
             $function =  $this.entries | where{$_.GetType().name -ne "vc_member"} |where{$_.masterSlave -eq 'Master' -or  $_.masterSlave -eq 'MasterSlave' }
 
+            if(!$member){
+                $ret=@()
+                return $ret
+            }
             $b1 = v_record -Name $this.MasterRecName -entries $member
 
 
             $ret += $b1;
             foreach($x in $function){
                 $x.setClass($this.MasterRecName )
+                $x.setSignalClass($this.signalClass)
                 $header  = $x.getHeader()
                 $body = $x.getBody()
                 $ret += make_packet_entry -header $header -body $body
@@ -126,13 +141,17 @@ class vc_class{
 
             $member = $this.entries | where{$_.GetType().name -eq "vc_member"} |where{$_.InOut -ne 'InternalMaster' }
             $function =  $this.entries | where{$_.GetType().name -ne "vc_member"}|where{$_.masterSlave -eq 'Slave' -or  $_.masterSlave -eq 'MasterSlave' }
-
+            if(!$member){
+                $ret=@()
+                return $ret
+            }
             $b1 = v_record -Name $this.SlaveRecName -entries $member
 
 
             $ret += $b1;
             foreach($x in $function){
                 $x.setClass($this.SlaveRecName )
+                $x.setSignalClass($this.signalClass)
                 $header  = $x.getHeader()
                 $body = $x.getBody()
                 $ret += make_packet_entry -header $header -body $body
@@ -147,7 +166,10 @@ class vc_class{
 
             $member = $this.entries | where{$_.GetType().name -eq "vc_member"}
             $member =  $member|where{$_.inout -eq "out"}
-
+            if(!$member){
+                $ret=@()
+                return $ret
+            }
             $b1 = v_record -Name "$($this.M2S_recName)" -entries $member
             $ret += $b1;
 
@@ -163,12 +185,44 @@ class vc_class{
             $member = $this.entries | where{$_.GetType().name -eq "vc_member"}
             $member =  $member|where{$_.inout -eq "in"}
 
+            if(!$member){
+                $ret=@()
+                return $ret
+            }
             $b1 = v_record -Name "$($this.S2M_recName)" -entries $member
             $ret += $b1;
 
 
             $ret+= make_packet_entry -header "-- End Pseudo class $($this.S2M_recName)`n`n" -body "-- End Pseudo class $($this.S2M_recName)_m2s`n`n"
             return $ret
+    }
+    [System.Object[]]getEntries_Transition(){
+                $ret=@()
+            $ret+= make_packet_entry -header "`n`n-- Starting Pseudo class $($this.Trans_recName)`n" -body "`n`n-- Starting Pseudo class $($this.Trans_recName)`n"
+
+            $member = $this.entries | where{$_.GetType().name -eq "vc_member"}
+            $member_in =  $member|where{$_.inout -eq "in" }
+            $member_out =  $member|where{$_.inout -eq "out"}
+
+            if(!$member_in -and !$member_out){
+                $ret=@()
+                return $ret
+            }
+
+            $mem =@()
+            if($member_in){
+                $mem += v_member -name s2m -type $($this.S2M_recName)
+            }
+            if($member_out){
+                $mem+=  v_member -name m2s -type $($this.M2S_recName)
+            }
+            
+            $b1 = v_record -Name "$($this.Trans_recName)" -entries $mem
+            $ret += $b1;
+
+            $ret+= make_packet_entry -header "-- End Pseudo class $($this.Trans_recName)`n`n" -body "-- End Pseudo class $($this.Trans_recName)_m2s`n`n"
+            return $ret
+
     }
 
     [System.Object[]]make_connection_pull($master){
@@ -177,6 +231,10 @@ class vc_class{
             $member = $this.entries | where{$_.GetType().name -eq "vc_member"}
             if($master -eq $true){
                 $member =  $member|where{$_.inout -eq "in"}
+                if(!$member){
+                    $ret=@()
+                    return $ret
+                }
                 $type = "$($this.name)_s2m"
                 
                 $className = $this.MasterRecName
@@ -184,6 +242,9 @@ class vc_class{
                 $afterPull = "$($this.MasterAfterPull)`n"
             }else{
                 $member =  $member|where{$_.inout -eq "out"}
+                if(!$member){
+                    return $ret
+                }
                 $type = "$($this.name)_m2s"
                 $className = $this.SlaveRecName                
 
@@ -198,6 +259,7 @@ class vc_class{
             $body+=$afterPull
             $pull = (v_procedure -name   $functionName  -argumentList "signal DataIn : in  $type" -body $body)
             $pull.setClass($className)
+            $pull.setSignalClass($this.signalClass)
             $header  = $pull.getHeader()
             $body    = $pull.getBody()
             $ret    += make_packet_entry -header $header -body $body
@@ -210,8 +272,14 @@ class vc_class{
             $body = ""
             
             $member = $this.entries | where{$_.GetType().name -eq "vc_member"}
+            if(!$member){
+                return $ret
+            }
             if($master -eq $true){
                 $member       =  $member|where{$_.inout -eq "out"}
+                if(!$member){
+                    return $ret
+                }
                 $type         =  $this.M2S_recName
                 $className    =  $this.MasterRecName
                 
@@ -219,7 +287,9 @@ class vc_class{
                 $afterPush    = "$($this.MasterAfterPush)`n"
             }else{
                 $member       =  $member|where{$_.inout -eq "in"}
-                
+                if(!$member){
+                    return $ret
+                }
                 $type         = $this.S2M_recName
                 $className    =  $this.SlaveRecName
                 $body        += "$($this.SlaveBeforePush)`n"
@@ -233,6 +303,7 @@ class vc_class{
             $body+=$afterPush;
             $push = (v_procedure -name   $functionName  -argumentList "signal DataOut : out  $type" -body $body)
             $push.setClass($className )
+            $push.setSignalClass($this.signalClass)
             $header  = $push.getHeader()
             $body    = $push.getBody()
             $ret    += make_packet_entry -header $header -body $body
@@ -256,6 +327,7 @@ class vc_class{
             $ret+=$this.getEntries_M2S()
             $ret+=$this.getEntries_Master()
             $ret+=$this.getEntries_Slave()
+            $ret+=$this.getEntries_Transition()
             $ret+=$this.getEntries_Connections()
             $ret+= make_packet_entry -header "-- End Pseudo class $($this.name)`n`n" -body "-- End Pseudo class $($this.name)`n`n"
             return $ret
@@ -279,9 +351,12 @@ class vc_class{
     }
 }
 
-function v_class($name,$entries){
+function v_class($name,$entries,[switch]$signalClass){
 
 $ret = [vc_class]::new($name, $entries);
+if($signalClass){
+$ret.signalClass = "signal "
+}
 return $ret
 
 

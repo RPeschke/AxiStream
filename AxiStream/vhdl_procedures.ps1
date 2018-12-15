@@ -14,6 +14,8 @@ if($masterSlave -eq $null){
     if($const){
         $ret.Modifier = "in"
     }
+
+
     return $ret
 
 }
@@ -27,7 +29,7 @@ class vc_procedure{
     [string]$ClassName
     [string]$Modifier
     [UseMasterSlave]$masterSlave
-
+    [string]$SignalClass
 
     vc_procedure($name,$argumentList,$body,$masterSlave){
         $this.argumentList=$argumentList
@@ -35,7 +37,7 @@ class vc_procedure{
         $this.body=$body
         $this.Modifier="inout"
         $this.masterSlave=$masterSlave
-        
+        $this.SignalClass =""
 
     }
     [string]getHeader(){
@@ -56,11 +58,14 @@ class vc_procedure{
         $this.ClassName = $className
         
     }
+    setSignalClass($signal){
+     $this.SignalClass = $signal
+    }
     [string]getArgList(){
 
         if($this.ClassName){
            
-            $classArgs="this : $($this.Modifier) $($this.ClassName)"
+            $classArgs="$($this.SignalClass) this : $($this.Modifier) $($this.ClassName)"
         }else {
             $classArgs=""
         }
