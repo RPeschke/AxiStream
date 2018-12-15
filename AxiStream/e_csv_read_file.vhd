@@ -18,10 +18,8 @@ entity csv_read_file is
     t_step : time := 1 ns 
   );
   port(
-    clk : in sl;
-
     Rows : out t_integer_array(NUM_COL downto 0) := (others => 0);
-    
+
     Index : out integer := 0
   ); 
 end csv_read_file;
@@ -37,34 +35,37 @@ begin
     variable  timeCounter: integer := 0;
     variable time_hasPassed: boolean := false;
   begin
- 
-    if not csv_isOpen(csv) then
+
+    if not csv_isOpen(csv) and not isEnd then
       csv_openFile(csv,input_buf, FileName, HeaderLines, NUM_COL);
     end if;
-    
-    while (not isEnd and timeCounter <100) loop
+
+    while (not isEnd) loop
       if not endfile(input_buf) then 
         csv_readLine(csv,input_buf);
         time_hasPassed := false;
+
+
+        while(not time_hasPassed) loop
+          wait for t_step;
+          timeCounter := timeCounter + 1;
+          if timeCounter > csv_get(csv, 0)  then
+            time_hasPassed := true;
+          end if;
+        end loop;
+
+        for i in 0 to NUM_COL loop
+          Rows(i) <= csv_get(csv, i)  ;
+        end loop;
+        Index <= csv_getIndex(csv);
       else 
         csv_close(csv,input_buf);
         isEnd := True;
       end if;
-
-      while(not time_hasPassed) loop
-        wait for t_step;
-        timeCounter := timeCounter + 1;
-        if timeCounter > csv_get(csv, 0)  then
-          time_hasPassed := true;
-        end if;
-      end loop;
-      
-      for i in 0 to NUM_COL loop
-        Rows(i) <= csv_get(csv, i)  ;
-      end loop;
-      Index <= csv_getIndex(csv);
-
     end loop;     
+    while (TRUE) loop
+      wait for 100 ns;
+    end loop;
   end process seq;
 end Behavioral;
 
