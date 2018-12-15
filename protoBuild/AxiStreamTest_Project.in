@@ -45,8 +45,51 @@ Speed Grade = -3
 ../AxiStream/text_IO_CSV.vhd
 ../AxiStream/text_io_export_csv.vhd
 ../AxiStream/UtilityPkg.vhd
+../AxiStream/Master_textio.vhd
 
 
+[Simulation 1]
+Name="tb_streamTest"
+Runtime="1000 ns"
+Onerror = "resume"
+TopLevelModule="work.tb_streamTest"
+InputDataFile="../example_in1.csv"
+OutputDataFile="../test3.txt"
+../AxiStream/UtilityPkg.vhd
+../AxiStream/axiStreamHelper.vhd
+../AxiStream/text_io_export_csv.vhd
+../AxiStream/text_IO_CSV.vhd
+../AxiStream/AxiMonoStream.vhd
+../AxiStream/axiIntBi2.vhd
+../AxiStream/slave_AxiBi.vhd
+../AxiStream/slave.vhd
+../AxiStream/Master_textio.vhd
+../AxiStream/MasterAxiBi.vhd
+../AxiStream/e_csv_read_file.vhd
+../AxiStream/csv_write_file.vhd
+../AxiStream/tb_streamTest.vhd
+
+
+[Simulation 2]
+Name="tb_streamTest2"
+Runtime="100 ns"
+Onerror = "resume"
+TopLevelModule="work.tb_streamTest"
+InputDataFile="../example_in1.csv"
+OutputDataFile="../test3.txt"
+../AxiStream/UtilityPkg.vhd
+../AxiStream/axiStreamHelper.vhd
+../AxiStream/text_io_export_csv.vhd
+../AxiStream/text_IO_CSV.vhd
+../AxiStream/AxiMonoStream.vhd
+../AxiStream/axiIntBi2.vhd
+../AxiStream/slave_AxiBi.vhd
+../AxiStream/slave.vhd
+../AxiStream/Master_textio.vhd
+../AxiStream/MasterAxiBi.vhd
+../AxiStream/e_csv_read_file.vhd
+../AxiStream/csv_write_file.vhd
+../AxiStream/tb_streamTest.vhd
 [CoreGen Files]
 #Add XCO files. You can just list the filename, OR have the CoreGen files be
 #auto-generated as well by specifying the section name
