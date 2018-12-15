@@ -69,3 +69,5 @@ _xmsgs/
 /.vs/AxiStream/v15/.suo
 /AxiStream.sln
 /AxiStream/AxiStream.v3sproj
+/make.sh
+/make_synt.sh
